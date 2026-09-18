@@ -37,11 +37,39 @@ Os dados utilizados neste projeto foram dispolibilizados pelo perfil do usuário
 É uma tabela derivada do estudo publicado no artigo [A data-driven approach to predict the success of bank telemarketing](https://sci-hub.box/10.1016/j.dss.2014.03.001), de Moro at al., 2014.
 
 - São dados de campanhas diretas de marketing (por telefone) de uma instituição bancária portuguesa.
-- A tabela tem 41.188 linhas e 21 colunas, sendo que a última informa se o cliente contratou o produto (yes ou no).
+- A tabela tem 41.188 linhas e 21 colunas, sendo que a última informa se o cliente contratou o produto (term depoist), pode ser yes ou no.
 - Não há identificação dos clientes, apenas dados de perfil, de data, dados da campanha e dados econômicos do momento da ligação.
 - Os dados variam entre maio/2008 e novembro/2010 e estão ordenados por data (apenas mês e dia da semana)
 
 A análise exploratória está disponível no notebook [eda.ipynb](eda.ipynb)
+
+> Observações:
+
+Em um cenário ideal para a implementação e avaliação de uma política de Multi-Armed Bandit, a base de dados registraria, para cada decisão:
+- o contexto do cliente
+- o conjunto de ofertas disponíveis
+- a oferta efetivamente selecionada como braço
+- a probabilidade de seleção dessa oferta pela política vigente (selection probability/propensity)
+- o reward observado após a interação, como a conversão
+
+Essa estrutura permitiria avaliar de forma mais rigorosa diferentes políticas adaptativas e realizar técnicas de avaliação off-policy. 
+
+No entanto, para o escopo simplificado deste projeto, será utilizada a base supracitada (conforme recomendado na descrição do tech challenge) que contém:
+- características dos clientes
+- informações das campanhas de marketing
+- o resultado da contratação de um depósito a prazo
+- ponto de limitação: NÃO registra diferentes ofertas nem as probabilidades históricas de seleção. 
+
+Dessa forma, o projeto deve ser entendido como uma demonstração controlada dos conceitos de Multi-Armed Bandit, na qual os braços e o processo de decisão são definidos ou simulados a partir das informações disponíveis, permitindo comparar estratégias como Thompson Sampling, Epsilon-Greedy e UCB com um baseline determinístico.
+
+Os resultados obtidos, portanto, demonstram o comportamento e o potencial da abordagem adaptativa dentro das premissas do experimento, e não devem ser interpretados como uma estimativa causal do ganho que seria obtido por uma política de ofertas implantada em produção. Em uma evolução do projeto, a solução poderia ser aplicada a dados reais de experimentação contendo:
+- múltiplas ofertas
+- decisões registradas
+- probabilidades de seleção
+- rewards observados
+- ser derivada de um experimento randomizado, não observacional
+
+Em resumo, como a base utilizada não registra qual oferta foi apresentada, o reward usado no protótipo será a conversão do term deposit.
 
 > ### Escolha do algoritmo
 
@@ -49,9 +77,13 @@ O estudo descrito no artigo [Improving Online Marketing Experiments with Driftin
 
 Considerando a base de dados disponível e as aplicações possíveis de cada algoritmo, 
 
-## ⚙️ Funcionalidades
+## ⚙️ Funcionalidades da aplicação
 
-> *Em breve*
+- Receber dados de um cliente/contexto
+- Gerar a recomendação de braço/oferta
+- Retornar a oferta recomendada
+- Retornar os scores/expectativas estimadas por braço para demonstração
+- Registrar a versão do modelo/política utilizada
 
 ## 📐 Arquitetura
 
@@ -59,12 +91,79 @@ Considerando a base de dados disponível e as aplicações possíveis de cada al
 
 ## 📁 Estrutura do projeto
 
-> *Em breve*
+Este repositório está dividido em 4 partes:
+
+1. Notebooks - EDA e demonstração (golden set)
+2. Implementação do bandit
+3. Construção da API
+4. Experimentos de MLFlow
+
+> *Tree - em breve*
 
 ## 🛠️ Instruções de execução
 
-> *Em breve*
+> *Em construção*
+
+### Requisitos:
+- Python 3.11 instalado
+
+### 1. Configurar ambiente virtual
+
+- Criar ambiente virtual
+
+```
+# se windows:
+python -m venv .venv
+
+# se mac ou linux:
+python3.11 -m venv .venv
+```
+
+- Ativar ambiente virtual
+
+```
+# windows
+.venv\Scripts\Activate.ps1
+
+# mac ou linux
+source .venv/bin/activate
+```
+
+- Instalar dependências
+
+```
+# windows
+pip install -r requirements.txt
+
+# mac ou linux
+pip3 install -r requirements.txt
+```
+
+- Criar ipykernel para usar venv nos notebooks
+
+```
+# windows
+python -m ipykernel install --user --name=venv-decisioning --display-name="Python (venv-decisioning)"
+
+# mac ou linux
+python3 -m ipykernel install --user --name=venv-decisioning --display-name="Python (venv-decisioning)"
+```
+
+
+### 2. Iniciar API localmente
+
+### 3. Acessar Swagger
 
 ## 🚀 Evolução do projeto
 
-> *Em breve*
+- Criar interface para fornecer dados e receber a sugestão
+- Implementar o projeto em uma cloud (AWS por exemplo)
+- Usar uma base de dados mais robusta (como explicado na parte de "Observações" da seção Fontes de dados)
+- Implantar logging e monitoramento de decisões
+- Criar experimento A/B ou contextual bandit real para coletar dados de novas ofertas
+- Evoluir de conversão binária para reward econômico, considerando valor da contratação e eventual custo da ação
+- Criar processo de retreinamento/atualização automática
+- Monitorar drift dos dados e alteração do comportamento por período
+
+Limitações do projeto:
+- A base utilizada não registra qual oferta foi apresentada, então a avaliação de um bandit precisa explicitar como os "braços" serão definidos e como o reward será observado ou simulado
