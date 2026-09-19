@@ -18,11 +18,11 @@ column_descriptions = {
     "pdays": "Number of days that passed after the client was last contacted from a previous campaign",
     "previous": "Number of contacts performed before this campaign and for this client",
     "poutcome": "Outcome of the previous marketing campaign",
-    "emp.var.rate": "Employment variation rate - quarterly indicator",
-    "cons.price.idx": "Consumer price index - monthly indicator",
-    "cons.conf.idx": "Consumer confidence index - monthly indicator",
+    "emp_var_rate": "Employment variation rate - quarterly indicator",
+    "cons_price_idx": "Consumer price index - monthly indicator",
+    "cons_conf_idx": "Consumer confidence index - monthly indicator",
     "euribor3m": "Euribor 3 month rate - daily indicator",
-    "nr.employed": "Number of employees - quarterly indicator",
+    "nr_employed": "Number of employees - quarterly indicator",
     "y": "Whether the client subscribed to a term deposit"
 }
 

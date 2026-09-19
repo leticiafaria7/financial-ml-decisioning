@@ -3,7 +3,7 @@
 *Tech Challenge da Fase 5 do curso de [pós-graduação em Engenharia de Machine Learning FIAP](https://postech.fiap.com.br/curso/machine-learning-engineering/)*
 > *📽️ Vídeo com demonstração técnica do projeto (em breve)*
 
-## 🎯 Sobre o projeto
+## 🎯 1. Sobre o projeto
 O projeto tem como objetivo construir uma plataforma de experimentação adaptativa para ofertas, mensagens ou próximos passos em canais digitais para uma empresa de segmento financeiro usando Multi-Armed Bandit.
 
 A ideia é decidir, em diferentes canais, qual oferta, mensagem ou próximo passo apresentar para cada cliente elegível.
@@ -43,7 +43,9 @@ Os dados utilizados neste projeto foram dispolibilizados pelo perfil do usuário
 
 A análise exploratória está disponível no notebook [1_eda.ipynb](notebooks/eda.ipynb)
 
-> Observações:
+**Observações: Como a base utilizada não registra qual oferta foi apresentada, o reward usado no protótipo será a conversão do term deposit.**
+
+> **CENÁRIO IDEAL**
 
 Em um cenário ideal para a implementação e avaliação de uma política de Multi-Armed Bandit, a base de dados registraria, para cada decisão:
 - o contexto do cliente
@@ -52,32 +54,70 @@ Em um cenário ideal para a implementação e avaliação de uma política de Mu
 - a probabilidade de seleção dessa oferta pela política vigente (selection probability/propensity)
 - o reward observado após a interação, como a conversão
 
-Essa estrutura permitiria avaliar de forma mais rigorosa diferentes políticas adaptativas e realizar técnicas de avaliação off-policy. 
+Essa estrutura permitiria avaliar de forma mais rigorosa diferentes políticas adaptativas e realizar técnicas de avaliação off-policy.
 
-No entanto, para o escopo simplificado deste projeto, será utilizada a base supracitada (conforme recomendado na descrição do tech challenge) que contém:
+Além disso, seria interessante que a base de dados utilizada fosse derivada de um experimento randomizado, e não de eventos observacionais.
+
+> **CENÁRIO REAL**
+
+Para o escopo simplificado deste projeto, será utilizada a base supracitada (conforme recomendado na descrição do tech challenge) que contém:
 - características dos clientes
 - informações das campanhas de marketing
+- forma de contato (celular ou telefone)
 - o resultado da contratação de um depósito a prazo
-- ponto de limitação: NÃO registra diferentes ofertas nem as probabilidades históricas de seleção. 
+
+O principal ponto de limitação para a abordagem multi-armed bandit é que a tabela NÃO registra diferentes ofertas nem as probabilidades históricas de seleção. 
 
 Dessa forma, o projeto deve ser entendido como uma demonstração controlada dos conceitos de Multi-Armed Bandit, na qual os braços e o processo de decisão são definidos ou simulados a partir das informações disponíveis, permitindo comparar estratégias como Thompson Sampling, Epsilon-Greedy e UCB com um baseline determinístico.
 
-Os resultados obtidos, portanto, demonstram o comportamento e o potencial da abordagem adaptativa dentro das premissas do experimento, e não devem ser interpretados como uma estimativa causal do ganho que seria obtido por uma política de ofertas implantada em produção. Em uma evolução do projeto, a solução poderia ser aplicada a dados reais de experimentação contendo:
-- múltiplas ofertas
-- decisões registradas
-- probabilidades de seleção
-- rewards observados
-- ser derivada de um experimento randomizado, não observacional
+Os resultados obtidos, portanto, demonstram o comportamento e o potencial da abordagem adaptativa dentro das premissas do experimento, e não devem ser interpretados como uma estimativa causal do ganho que seria obtido por uma política de ofertas implantada em produção. 
 
-Em resumo, como a base utilizada não registra qual oferta foi apresentada, o reward usado no protótipo será a conversão do term deposit.
+> ### 🦾 Definições do bandit
 
-> ### Escolha do algoritmo
+**Features utilizadas**
+
+| Tipo                   | Feature                                                          |
+| ---------------------- | ---------------------------------------------------------------- |
+| Perfil                 | Idade                                                            |
+| Perfil                 | Faixa etária                                                     |
+| Perfil                 | Profissão                                                        |
+| Perfil                 | Estado civil                                                     |
+| Perfil                 | Escolaridade                                                     |
+| Crédito                | Se tem financiamento imobiliário                                 |
+| Crédito                | Se tem empréstimo pessoal                                        |
+| Data                   | Mês                                                              |
+| Data                   | Ano                                                              |
+| Data                   | Dia da semana                                                    |
+| Campanhas anteriores   | Quantos contatos teve em campanhas anteriores                    |
+| Campanhas anteriores   | Resultado da campanha anterior (sucesso, falha ou não existente) |
+| Indicadores econômicos | Consumer confidence index — indicador mensal                     |
+| Indicadores econômicos | Consumer price index — indicador mensal                          |
+| Indicadores econômicos | Employment variation rate — indicador trimestral                 |
+| Indicadores econômicos | Euribor 3 month rate — indicador diário                          |
+| Indicadores econômicos | Number of employees — indicador trimestral                       |
+
+
+**Variáveis removidas da tabela original**
+- campaign: não faz sentido usar a quantidade de contatos durante a campanha porque isso não necessariamente será usado ao fazer o predict
+- duration: não tem como saber qual será a duração da ligação ao fazer o contato
+- pdays: a maioria é 999 (equivalente a null)
+- default ()se tem crédito por padrão): apenas 3 estão como yes, o resto é no ou unknown
+
+**Braços**
+1. Braço 1: term deposit via celular
+2. Braço 2: term deposit via telefone
+
+**Reward** (coluna 'y')
+- yes: conversão
+- no: não conversão
+
+> ### 🧠 Escolha do algoritmo
 
 O estudo descrito no artigo [Improving Online Marketing Experiments with Drifting Multi-armed Bandits](https://www.scitepress.org/papers/2015/54587/54587.pdf) (Burtini et al. 2015) cita os 3 algoritmos e alguns outros para serem aplicados em um experimento de marketing, mas escolhe testar o Thompson Sampling por ser o estado da arte no tratamento de regression bandits não estacionários (em constante mudança), e porque os resultados dos demais algoritmos (ε-greedy e UCB) tiveram performance muito inferior.
 
 Considerando a base de dados disponível e as aplicações possíveis de cada algoritmo, 
 
-## ⚙️ Funcionalidades da aplicação
+## ⚙️ 2. Funcionalidades da aplicação
 
 - Receber dados de um cliente/contexto
 - Gerar a recomendação de braço/oferta
@@ -85,11 +125,11 @@ Considerando a base de dados disponível e as aplicações possíveis de cada al
 - Retornar os scores/expectativas estimadas por braço para demonstração
 - Registrar a versão do modelo/política utilizada
 
-## 📐 Arquitetura
+## 📐 3. Arquitetura
 
 > *Em breve*
 
-## 📁 Estrutura do projeto
+## 📁 4. Estrutura do projeto
 
 Este repositório está dividido em 4 partes:
 
@@ -100,14 +140,14 @@ Este repositório está dividido em 4 partes:
 
 > *Tree - em breve*
 
-## 🛠️ Instruções de execução
+## 🛠️ 5. Instruções de execução
 
 > *Em construção*
 
 ### Requisitos:
 - Python 3.11 instalado
 
-### 1. Configurar ambiente virtual
+### 5.1 Configurar ambiente virtual
 
 - Criar ambiente virtual
 
@@ -150,11 +190,11 @@ python3 -m ipykernel install --user --name=venv-decisioning --display-name="Pyth
 ```
 
 
-### 2. Iniciar API localmente
+### 5.2 Iniciar API localmente
 
-### 3. Acessar Swagger
+### 5.3 Acessar Swagger
 
-## 🚀 Evolução do projeto
+## 🚀 6. Evolução do projeto
 
 - Criar interface para fornecer dados e receber a sugestão
 - Implementar o projeto em uma cloud (AWS por exemplo)
@@ -164,6 +204,7 @@ python3 -m ipykernel install --user --name=venv-decisioning --display-name="Pyth
 - Evoluir de conversão binária para reward econômico, considerando valor da contratação e eventual custo da ação
 - Criar processo de retreinamento/atualização automática
 - Monitorar drift dos dados e alteração do comportamento por período
+- Usar braços de comunicação e oferta, como: abordagem padrão, abordagem personalizada por perfil, abordagem de follow-up, variações de mensagem/argumentação comercial
 
 Limitações do projeto:
 - A base utilizada não registra qual oferta foi apresentada, então a avaliação de um bandit precisa explicitar como os "braços" serão definidos e como o reward será observado ou simulado
