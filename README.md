@@ -41,7 +41,7 @@ Os dados utilizados neste projeto foram dispolibilizados pelo perfil do usuário
 - Não há identificação dos clientes, apenas dados de perfil, de data, dados da campanha e dados econômicos do momento da ligação.
 - Os dados variam entre maio/2008 e novembro/2010 e estão ordenados por data (apenas mês e dia da semana)
 
-A análise exploratória está disponível no notebook [eda.ipynb](eda.ipynb)
+A análise exploratória está disponível no notebook [1_eda.ipynb](notebooks/eda.ipynb)
 
 > Observações:
 
@@ -167,3 +167,4 @@ python3 -m ipykernel install --user --name=venv-decisioning --display-name="Pyth
 
 Limitações do projeto:
 - A base utilizada não registra qual oferta foi apresentada, então a avaliação de um bandit precisa explicitar como os "braços" serão definidos e como o reward será observado ou simulado
+- A base tem dados muito antigos (2008 a 2010), e os indicadores econômicos mudaram muito desde então. Seria necessário usar uma tabela mais atual para previsões mais precisas para os dias de hoje

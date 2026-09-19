@@ -49,6 +49,21 @@ days = {
     "fri": "5. fri"
 }
 
+def faixa_etaria(x):
+    if x <= 25:
+        return "Até 25 anos"
+    if x <= 30:
+        return "Entre 26 e 30 anos"
+    if x <= 40:
+        return "Entre 31 e 40 anos"
+    if x <= 50:
+        return "Entre 41 e 50 anos"
+    if x <= 60:
+        return "Entre 50 e 60 anos"
+    else:
+        return "Mais de 60 anos"
+
+
 def sep_milhar(num, casas_decimais = 0):
     return f"{num:,.{casas_decimais}f}".replace(",", ".")
 
