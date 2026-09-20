@@ -1,0 +1,56 @@
+feature
+num__age
+num__previous
+num__emp_var_rate
+num__cons_price_idx
+num__cons_conf_idx
+num__euribor3m
+num__nr_employed
+cat__job_admin.
+cat__job_blue-collar
+cat__job_entrepreneur
+cat__job_housemaid
+cat__job_management
+cat__job_retired
+cat__job_self-employed
+cat__job_services
+cat__job_student
+cat__job_technician
+cat__job_unemployed
+cat__job_unknown
+cat__marital_divorced
+cat__marital_married
+cat__marital_single
+cat__marital_unknown
+cat__education_basic.4y
+cat__education_basic.6y
+cat__education_basic.9y
+cat__education_high.school
+cat__education_illiterate
+cat__education_professional.course
+cat__education_university.degree
+cat__education_unknown
+cat__housing_no
+cat__housing_unknown
+cat__housing_yes
+cat__loan_no
+cat__loan_unknown
+cat__loan_yes
+cat__month_03. mar
+cat__month_04. apr
+cat__month_05. may
+cat__month_06. jun
+cat__month_07. jul
+cat__month_08. aug
+cat__month_09. sep
+cat__month_10. oct
+cat__month_11. nov
+cat__month_12. dec
+cat__day_of_week_1. mon
+cat__day_of_week_2. tue
+cat__day_of_week_3. wed
+cat__day_of_week_4. thu
+cat__day_of_week_5. fri
+cat__poutcome_failure
+cat__poutcome_nonexistent
+cat__poutcome_success

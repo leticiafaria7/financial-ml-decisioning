@@ -1,0 +1,3 @@
+politica,n,match_rate,reward_observado_matches,reward_estimado_model_based,lift_absoluto_vs_baseline,lift_relativo_vs_baseline
+Baseline estático: sempre cellular,2058,0.8114674441205053,0.5766467065868264,0.7406072880693533,0.0,0.0
+LinTS,2058,0.706997084548105,0.5621993127147766,0.7109002352990998,-0.029707052770253428,-0.040111747816707344
