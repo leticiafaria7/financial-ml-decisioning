@@ -29,7 +29,6 @@ Os principais algoritmos usados em soluções multi-armed bandit são:
 | **UCB (Upper Confidence Bound)** | Baseia-se na combinação do desempenho observado de cada alternativa com um intervalo de confiança que favorece opções com maior incerteza ou menor número de observações | Selecionar ofertas ou mensagens considerando tanto seu desempenho histórico quanto o potencial de alternativas ainda pouco exploradas |
 
 
-
 > ### 🎲 Fontes de dados
 
 Os dados utilizados neste projeto foram dispolibilizados pelo perfil do usuário [tunguz](https://www.kaggle.com/tunguz) no site do Kaggle: [Bank Marketing Data Set](https://www.kaggle.com/datasets/tunguz/bank-marketing-data-set)
@@ -86,7 +85,6 @@ Os resultados obtidos, portanto, demonstram o comportamento e o potencial da abo
 | Crédito                | Se tem financiamento imobiliário                                 |
 | Crédito                | Se tem empréstimo pessoal                                        |
 | Data                   | Mês                                                              |
-| Data                   | Ano                                                              |
 | Data                   | Dia da semana                                                    |
 | Campanhas anteriores   | Quantos contatos teve em campanhas anteriores                    |
 | Campanhas anteriores   | Resultado da campanha anterior (sucesso, falha ou não existente) |
@@ -101,7 +99,8 @@ Os resultados obtidos, portanto, demonstram o comportamento e o potencial da abo
 - campaign: não faz sentido usar a quantidade de contatos durante a campanha porque isso não necessariamente será usado ao fazer o predict
 - duration: não tem como saber qual será a duração da ligação ao fazer o contato
 - pdays: a maioria é 999 (equivalente a null)
-- default ()se tem crédito por padrão): apenas 3 estão como yes, o resto é no ou unknown
+- default (se tem crédito por padrão): apenas 3 estão como yes, o resto é no ou unknown
+- year: se fazemos split temporal, não faz sentido usar o ano (os anos da fração de teste não estarão na fração de treino)
 
 **Braços**
 1. Braço 1: term deposit via celular
@@ -115,7 +114,13 @@ Os resultados obtidos, portanto, demonstram o comportamento e o potencial da abo
 
 O estudo descrito no artigo [Improving Online Marketing Experiments with Drifting Multi-armed Bandits](https://www.scitepress.org/papers/2015/54587/54587.pdf) (Burtini et al. 2015) cita os 3 algoritmos e alguns outros para serem aplicados em um experimento de marketing, mas escolhe testar o Thompson Sampling por ser o estado da arte no tratamento de regression bandits não estacionários (em constante mudança), e porque os resultados dos demais algoritmos (ε-greedy e UCB) tiveram performance muito inferior.
 
-Considerando a base de dados disponível e as aplicações possíveis de cada algoritmo, 
+Considerando a base de dados disponível e as aplicações possíveis de cada algoritmo, a abordagem escolhida será o **Thompson Sampling** em sua versão contextual, preferencialmente o Linear Thompson Sampling (LinTS), por combinar uma estratégia de **exploração baseada na incerteza** com a capacidade de **considerar características do cliente** na escolha da ação. 
+
+Embora Epsilon-Greedy seja mais simples de implementar, sua exploração é essencialmente aleatória e depende da definição do parâmetro epsilon, enquanto o UCB também apresenta uma estratégia robusta baseada em incerteza e constitui uma alternativa válida.
+
+O Thompson Sampling, porém, oferece uma combinação adequada de fundamentação teórica, bom desempenho empírico e interpretabilidade para o contexto deste projeto. A utilização de uma versão contextual é particularmente importante, pois permite que variáveis como idade, profissão, histórico de campanhas e contexto econômico influenciem a recomendação, em vez de aprender apenas qual braço apresenta maior conversão média para toda a população. 
+
+Dessa forma, o LinTS será utilizado como política adaptativa principal e comparado a um baseline determinístico, mantendo o escopo do projeto mais simples sem perder a demonstração dos principais conceitos de exploração, explotação e personalização.
 
 ## ⚙️ 2. Funcionalidades da aplicação
 
@@ -179,7 +184,7 @@ pip install -r requirements.txt
 pip3 install -r requirements.txt
 ```
 
-- Criar ipykernel para usar venv nos notebooks
+- Criar ipykernel para usar o .venv criado nos notebooks
 
 ```
 # windows
@@ -209,3 +214,4 @@ python3 -m ipykernel install --user --name=venv-decisioning --display-name="Pyth
 Limitações do projeto:
 - A base utilizada não registra qual oferta foi apresentada, então a avaliação de um bandit precisa explicitar como os "braços" serão definidos e como o reward será observado ou simulado
 - A base tem dados muito antigos (2008 a 2010), e os indicadores econômicos mudaram muito desde então. Seria necessário usar uma tabela mais atual para previsões mais precisas para os dias de hoje
+- A base não tem todos os meses de todos os anos e o volume de observações varia ao longo dos meses
