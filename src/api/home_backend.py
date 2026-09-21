@@ -25,7 +25,7 @@ DATA_DIR = Path(os.getenv("DATA_DIR", PROJECT_ROOT / "data" / "trusted"))
 MODEL_PATH = Path(os.getenv("MODEL_PATH", PROJECT_ROOT / "models" / "lints_bundle.joblib"))
 THRESHOLD = float(os.getenv("THRESHOLD", "0.30"))
 
-# Indicadores: (chave, rótulo exibido, arquivo parquet, usa periodo_mes?)
+# Indicadores: (chave = nome da coluna de valor, rótulo exibido, arquivo parquet, usa month_position?)
 INDICATORS = [
     ("emp_var_rate", "Taxa de variação de emprego", "emp_var_rate_mensal.parquet", False),
     ("cons_price_idx", "Índice de preço ao consumidor", "cons_price_idx_mensal.parquet", False),
@@ -33,6 +33,10 @@ INDICATORS = [
     ("euribor3m", "Euribor 3m", "euribor3m_mensal.parquet", True),
     ("nr_employed", "Número de empregados", "nr_employed_mensal.parquet", False),
 ]
+
+# Colunas que identificam a linha nas tabelas (não são o valor do indicador)
+KEY_COLUMNS = {"month", "year", "month_position", "periodo_mes"}
+PERIOD_COLUMN_NAMES = ("month_position", "periodo_mes")
 
 # Categorias válidas (validação server-side)
 CATEGORIES: dict[str, list[str]] = {
@@ -45,36 +49,20 @@ CATEGORIES: dict[str, list[str]] = {
     "housing": ["yes", "no", "unknown"],
     "month": ["03. mar", "04. apr", "05. may", "06. jun", "07. jul",
               "08. aug", "09. sep", "10. oct", "11. nov", "12. dec"],
-    "periodo_mes": ["início", "meio", "fim"],
     "day_of_week": ["1. mon", "2. tue", "3. wed", "4. thu", "5. fri"],
     "poutcome": ["success", "failure", "nonexistent"],
 }
+# Campos do formulário usados apenas para buscar o Euribor (NÃO são variáveis do modelo)
+PERIODO_MES_OPTIONS = ["início", "meio", "fim"]
 VALID_YEARS = [2008, 2009, 2010]
 AGE_MIN, AGE_MAX = 17, 98
 
-# Valor de "periodo_mes" como o modelo/parquet espera (ajuste se necessário)
-PERIODO_MES_MODEL_VALUE = {"início": "início", "meio": "meio", "fim": "fim"}
-
-# Nome da coluna do modelo para cada campo do formulário/indicador.
-# Ajuste aqui se as colunas de `context_features` tiverem outros nomes.
-FEATURE_COLUMNS = {
-    "age": "age",
-    "job": "job",
-    "marital": "marital",
-    "education": "education",
-    "loan": "loan",
-    "housing": "housing",
-    "month": "month",
-    "year": "year",
-    "periodo_mes": "periodo_mes",
-    "day_of_week": "day_of_week",
-    "poutcome": "poutcome",
-    "emp_var_rate": "emp_var_rate",
-    "cons_price_idx": "cons_price_idx",
-    "cons_conf_idx": "cons_conf_idx",
-    "euribor3m": "euribor3m",
-    "nr_employed": "nr_employed",
-}
+# Variáveis do modelo (o bundle traz a lista oficial em `context_features`)
+MODEL_FEATURES = [
+    "age", "previous", "emp_var_rate", "cons_price_idx", "cons_conf_idx", "euribor3m",
+    "nr_employed", "job", "marital", "education", "housing", "loan", "month",
+    "day_of_week", "poutcome",
+]
 
 CONTACT_LABELS = {"cellular": "Celular", "telephone": "Telefone"}
 
@@ -84,15 +72,16 @@ class ValidationError(ValueError):
 
 
 # --------------------------------------------------------------------------- #
-# Normalização de chaves (mês / ano / período do mês)
+# Normalização de chaves (mês / período do mês)
 # --------------------------------------------------------------------------- #
 _MONTH_NAMES = {"jan": 1, "feb": 2, "mar": 3, "apr": 4, "may": 5, "jun": 6,
                 "jul": 7, "aug": 8, "sep": 9, "oct": 10, "nov": 11, "dec": 12}
-_PERIODO_ALIASES = {
-    "inicio": "inicio", "begin": "inicio", "beginning": "inicio", "start": "inicio",
-    "meio": "meio", "mid": "meio", "middle": "meio",
-    "fim": "fim", "end": "fim",
-}
+_PERIODO_NUMERIC = {"1": "inicio", "1.0": "inicio", "2": "meio", "2.0": "meio", "3": "fim", "3.0": "fim"}
+_PERIODO_PREFIXES = (
+    (("ini", "beg", "sta", "ear"), "inicio"),
+    (("mei", "mid"), "meio"),
+    (("fim", "end", "fin", "lat"), "fim"),
+)
 
 
 def _strip_accents(text: str) -> str:
@@ -113,11 +102,17 @@ def _month_number(value: Any) -> int | None:
 
 
 def _periodo_key(value: Any) -> str | None:
+    """Normaliza 'início'/'inicio'/'begin'/'1. início'/1 -> 'inicio' (idem meio, fim)."""
     if value is None or (isinstance(value, float) and np.isnan(value)):
         return None
     text = _strip_accents(str(value).strip().lower())
-    text = re.sub(r"^\d+\.\s*", "", text)  # remove prefixo numérico, ex.: "1. inicio"
-    return _PERIODO_ALIASES.get(text, text)
+    if text in _PERIODO_NUMERIC:
+        return _PERIODO_NUMERIC[text]
+    text = re.sub(r"^\d+\.\s+", "", text)  # remove prefixo numérico, ex.: "1. inicio"
+    for prefixes, key in _PERIODO_PREFIXES:
+        if text.startswith(prefixes):
+            return key
+    return text
 
 
 # --------------------------------------------------------------------------- #
@@ -125,6 +120,13 @@ def _periodo_key(value: Any) -> str | None:
 # --------------------------------------------------------------------------- #
 _tables: dict[str, pd.DataFrame] = {}
 _tables_lock = threading.Lock()
+
+
+def _period_column(df: pd.DataFrame) -> str | None:
+    for name in PERIOD_COLUMN_NAMES:
+        if name in df.columns:
+            return name
+    return None
 
 
 def _load_table(filename: str) -> pd.DataFrame:
@@ -136,15 +138,17 @@ def _load_table(filename: str) -> pd.DataFrame:
             df = pd.read_parquet(path)
             df["_month"] = df["month"].map(_month_number)
             df["_year"] = pd.to_numeric(df["year"], errors="coerce").astype("Int64")
-            if "periodo_mes" in df.columns:
-                df["_periodo"] = df["periodo_mes"].map(_periodo_key)
+            period_col = _period_column(df)
+            if period_col:
+                df["_periodo"] = df[period_col].map(_periodo_key)
             _tables[filename] = df
         return _tables[filename]
 
 
-def _value_column(df: pd.DataFrame) -> str:
-    ignored = {"month", "year", "periodo_mes"}
-    candidates = [c for c in df.columns if c not in ignored and not c.startswith("_")]
+def _value_column(df: pd.DataFrame, key: str) -> str:
+    if key in df.columns:
+        return key
+    candidates = [c for c in df.columns if c not in KEY_COLUMNS and not c.startswith("_")]
     if not candidates:
         raise ValueError("Não foi possível identificar a coluna de valor na tabela parquet.")
     return candidates[0]
@@ -155,14 +159,14 @@ def get_indicators(month: str | None, year: str | int | None,
     """Retorna a lista de indicadores para o período informado.
 
     Os 4 indicadores mensais dependem de mês e ano; o Euribor 3m depende também
-    do período do mês. Quando não há dado, o valor vem como None.
+    de month_position (início/meio/fim). Quando não há dado, o valor vem como None.
     """
     month_num = _month_number(month)
     try:
         year_num = int(year) if year not in (None, "") else None
     except (TypeError, ValueError):
         year_num = None
-    periodo = _periodo_key(periodo_mes)
+    periodo = _periodo_key(periodo_mes) if periodo_mes else None
 
     result = []
     for key, label, filename, needs_periodo in INDICATORS:
@@ -171,10 +175,14 @@ def get_indicators(month: str | None, year: str | int | None,
             df = _load_table(filename)
             mask = (df["_month"] == month_num) & (df["_year"] == year_num)
             if needs_periodo:
+                if "_periodo" not in df.columns:
+                    raise ValueError(
+                        f"A tabela {filename} precisa de uma coluna 'month_position' (ou 'periodo_mes')."
+                    )
                 mask &= df["_periodo"] == periodo
-            rows = df.loc[mask]
+            rows = df.loc[mask.fillna(False)]
             if not rows.empty:
-                value = float(rows.iloc[0][_value_column(df)])
+                value = float(rows.iloc[0][_value_column(df, key)])
         result.append({"key": key, "label": label, "value": value})
     return result
 
@@ -215,6 +223,11 @@ def _validate(payload: dict[str, Any]) -> dict[str, Any]:
         raise ValidationError("ano inválido")
     clean["year"] = year
 
+    periodo = payload.get("periodo_mes")
+    if periodo not in PERIODO_MES_OPTIONS:
+        raise ValidationError(f"Valor inválido para 'periodo_mes': {periodo!r}")
+    clean["periodo_mes"] = periodo
+
     for field, allowed in CATEGORIES.items():
         value = payload.get(field)
         if value not in allowed:
@@ -223,34 +236,46 @@ def _validate(payload: dict[str, Any]) -> dict[str, Any]:
     return clean
 
 
+def _derive_previous(poutcome: str) -> int:
+    """`previous` (nº de contatos antes desta campanha) não está no formulário.
+
+    Aproximação: sem campanha anterior ('nonexistent') => 0; caso contrário => 1.
+    Se quiser o valor real, adicione um campo na home e envie `previous` no payload.
+    """
+    return 0 if poutcome == "nonexistent" else 1
+
+
 def predict(payload: dict[str, Any]) -> dict[str, Any]:
     """Executa o modelo para um único cliente e devolve contato + aceitação."""
     data = _validate(payload)
 
-    # Indicadores vêm do servidor (não confiamos nos valores do cliente)
+    # Os indicadores vêm do servidor (não confiamos nos valores do cliente).
+    # month + year + month_position servem SÓ para achar o Euribor; não entram no modelo.
     indicators = get_indicators(data["month"], data["year"], data["periodo_mes"])
     for item in indicators:
         if item["value"] is None:
             raise LookupError(f"Indicador sem dados para o período: {item['label']}")
         data[item["key"]] = item["value"]
 
-    data["periodo_mes"] = PERIODO_MES_MODEL_VALUE.get(data["periodo_mes"], data["periodo_mes"])
+    if "previous" in payload and str(payload["previous"]).strip() != "":
+        data["previous"] = int(payload["previous"])
+    else:
+        data["previous"] = _derive_previous(data["poutcome"])
 
     bundle = _get_bundle()
     preprocessor = bundle["preprocessor"]
     lints = bundle["bandit"]
     reward_models = bundle["reward_models"]
-    context_features = bundle["context_features"]
+    context_features = list(bundle["context_features"])
 
-    row = {FEATURE_COLUMNS[k]: v for k, v in data.items() if k in FEATURE_COLUMNS}
-    missing = [c for c in context_features if c not in row]
+    missing = [c for c in context_features if c not in data]
     if missing:
         raise KeyError(
             f"O modelo espera colunas que a home não fornece: {missing}. "
-            "Ajuste FEATURE_COLUMNS em home_backend.py."
+            "Ajuste os campos em home_backend.py."
         )
 
-    df = pd.DataFrame([row])[list(context_features)]
+    df = pd.DataFrame([{c: data[c] for c in context_features}])[context_features]
     X = np.asarray(preprocessor.transform(df), dtype=np.float64)
 
     action = np.asarray(lints.predict(contexts=X)).reshape(-1)[0]
