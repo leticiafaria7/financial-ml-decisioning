@@ -1,14 +1,11 @@
-"""Aplicação Flask - API de recomendação de ofertas (multi-armed bandit).
 
-Execução:
-    python3 main.py
-"""
 
 import os
-
 from flask import Flask, jsonify, render_template, request
-
 from src.api import home_backend
+from dotenv import load_dotenv
+
+load_dotenv()
 
 app = Flask(
     __name__,

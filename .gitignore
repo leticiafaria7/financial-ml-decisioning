@@ -223,3 +223,9 @@ data_selection.ipynb
 
 # mac
 .DS_Store
+
+# neon
+.neon
+node_modules/
+package-lock.json
+teste_neon.ipynb

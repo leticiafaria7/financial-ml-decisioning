@@ -23,7 +23,7 @@ from joblib import load
 PROJECT_ROOT = Path(__file__).resolve().parents[2]  # raiz do repositório (onde está o main.py)
 DATA_DIR = Path(os.getenv("DATA_DIR", PROJECT_ROOT / "data" / "trusted"))
 MODEL_PATH = Path(os.getenv("MODEL_PATH", PROJECT_ROOT / "models" / "lints_bundle.joblib"))
-THRESHOLD = float(os.getenv("THRESHOLD", "0.30"))
+THRESHOLD = float(os.getenv("THRESHOLD", "0.50"))
 
 # Indicadores: (chave = nome da coluna de valor, rótulo exibido, arquivo parquet, usa month_position?)
 INDICATORS = [
