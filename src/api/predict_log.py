@@ -2,12 +2,17 @@
 # Imports
 # --------------------------------------------------------------------------------------- #
 
+from __future__ import annotations
+from typing import Any
+
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
 import psycopg
 
 from src.config.neon import DATABASE_URL, validar_database
+
+# from src.api.predict_log import registrar_predict
 
 # --------------------------------------------------------------------------------------- #
 # Instâncias
@@ -137,4 +142,60 @@ def registrar_predict(payload, indicadores, resultado, status_code, status_messa
 
     except Exception as exc:
         print("Erro ao persistir log de predict:", exc)
-        
+
+
+def processar_predict(payload: dict[str, Any]) -> tuple[dict[str, Any], int]:
+    """Executa a predição e registra a tentativa no Neon."""
+
+    # Import local para evitar dependência circular.
+    from src.api.api_endpoints import ValidationError, executar_predict
+
+    indicadores = {}
+    resultado = {}
+
+    try:
+        resultado, indicadores = executar_predict(payload)
+
+        registrar_predict(
+            payload=payload,
+            indicadores=indicadores,
+            resultado=resultado,
+            status_code=200,
+            status_message="Prediction successful"
+        )
+
+        return resultado, 200
+
+    except ValidationError as exc:
+        registrar_predict(
+            payload=payload,
+            indicadores=indicadores,
+            resultado=resultado,
+            status_code=400,
+            status_message=str(exc)
+        )
+
+        raise
+
+    except LookupError as exc:
+        registrar_predict(
+            payload=payload,
+            indicadores=indicadores,
+            resultado=resultado,
+            status_code=404,
+            status_message=str(exc)
+        )
+
+        raise
+
+    except Exception:
+        registrar_predict(
+            payload=payload,
+            indicadores=indicadores,
+            resultado=resultado,
+            status_code=500,
+            status_message="Internal server error"
+        )
+
+        raise
+    

@@ -209,6 +209,7 @@ python3 -m ipykernel install --user --name=venv-decisioning --display-name="Pyth
 - Criar processo de retreinamento/atualização automática
 - Monitorar drift dos dados e alteração do comportamento por período
 - Usar braços de comunicação e oferta, como: abordagem padrão, abordagem personalizada por perfil, abordagem de follow-up, variações de mensagem/argumentação comercial
+- Criar uma tabela para registrar todas as requisições de todos os endpoints
 
 Limitações do projeto:
 - A base utilizada não registra qual oferta foi apresentada, então a avaliação de um bandit precisa explicitar como os "braços" serão definidos e como o reward será observado ou simulado

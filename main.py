@@ -6,9 +6,10 @@ import os
 
 from dotenv import load_dotenv
 from flasgger import Swagger
-from flask import Flask, render_template
+from flask import Flask, jsonify, render_template, request
 from werkzeug.middleware.proxy_fix import ProxyFix
 
+from src.api import home_backend
 from src.api.api_endpoints import api_bp
 
 
@@ -26,14 +27,7 @@ def create_app():
         static_folder="src/static"
     )
 
-    # Importante para deploy atrás do proxy do Render.
-    app.wsgi_app = ProxyFix(
-        app.wsgi_app,
-        x_for=1,
-        x_proto=1,
-        x_host=1,
-        x_prefix=1
-    )
+    app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)
 
     app.config["SWAGGER"] = {
         "title": "Financial ML Decisioning API",
@@ -45,10 +39,7 @@ def create_app():
 
     Swagger(app)
 
-    app.register_blueprint(
-        api_bp,
-        url_prefix="/api"
-    )
+    app.register_blueprint(api_bp, url_prefix="/api")
 
     @app.get("/")
     def home():
@@ -58,6 +49,46 @@ def create_app():
             github_url=os.getenv("GITHUB_URL", "https://github.com/"),
             swagger_url="/docs/"
         )
+
+    @app.get("/home/indicators")
+    def home_indicators():
+        """Rota de compatibilidade utilizada pela interface home."""
+
+        try:
+            indicators = home_backend.get_indicators(
+                request.args.get("month"),
+                request.args.get("year"),
+                request.args.get("periodo_mes")
+            )
+
+            return jsonify(indicators=indicators), 200
+
+        except home_backend.ValidationError as exc:
+            return jsonify(error=str(exc)), 400
+
+        except LookupError as exc:
+            return jsonify(error=str(exc)), 404
+
+        except Exception:
+            return jsonify(error="Erro interno ao consultar indicadores."), 500
+
+    @app.post("/home/predict")
+    def home_predict():
+        """Rota de compatibilidade utilizada pela interface home."""
+
+        payload = request.get_json(silent=True) or {}
+
+        try:
+            return jsonify(home_backend.predict(payload)), 200
+
+        except home_backend.ValidationError as exc:
+            return jsonify(error=str(exc)), 400
+
+        except LookupError as exc:
+            return jsonify(error=str(exc)), 404
+
+        except Exception:
+            return jsonify(error="Erro interno ao realizar a predição."), 500
 
     return app
 
