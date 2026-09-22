@@ -201,7 +201,6 @@ python3 -m ipykernel install --user --name=venv-decisioning --display-name="Pyth
 
 ## 🚀 6. Evolução do projeto
 
-- Criar interface para fornecer dados e receber a sugestão
 - Implementar o projeto em uma cloud (AWS por exemplo)
 - Usar uma base de dados mais robusta (como explicado na parte de "Observações" da seção Fontes de dados)
 - Implantar logging e monitoramento de decisões
