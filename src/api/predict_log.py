@@ -12,8 +12,6 @@ import psycopg
 
 from src.config.neon import DATABASE_URL, validar_database
 
-# from src.api.predict_log import registrar_predict
-
 # --------------------------------------------------------------------------------------- #
 # Instâncias
 # --------------------------------------------------------------------------------------- #
@@ -198,4 +196,3 @@ def processar_predict(payload: dict[str, Any]) -> tuple[dict[str, Any], int]:
         )
 
         raise
-    

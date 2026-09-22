@@ -1,4 +1,6 @@
-"""Adaptador entre a interface home e a lógica central da API."""
+# --------------------------------------------------------------------------------------- #
+# Imports
+# --------------------------------------------------------------------------------------- #
 
 from __future__ import annotations
 
@@ -11,11 +13,18 @@ from src.api.api_endpoints import (
 from src.api.predict_log import processar_predict
 
 
+# --------------------------------------------------------------------------------------- #
+# Instâncias
+# --------------------------------------------------------------------------------------- #
+
 CONTACT_LABELS = {
     "cellular": "Celular",
     "telephone": "Telefone"
 }
 
+# --------------------------------------------------------------------------------------- #
+# Funções
+# --------------------------------------------------------------------------------------- #
 
 def get_indicators(month: str | None, year: str | int | None, periodo_mes: str | None = None) -> list[dict[str, Any]]:
     """Retorna os indicadores no formato esperado pela página home."""

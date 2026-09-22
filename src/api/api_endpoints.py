@@ -464,6 +464,9 @@ def categories():
             error="Erro interno ao carregar categorias."
         ), 500
 
+# --------------------------------------------------------------------------------------- #
+# Endpoint GET indicators
+# --------------------------------------------------------------------------------------- #
 
 @api_bp.get("/indicators")
 def indicators():
@@ -517,6 +520,9 @@ def indicators():
     except Exception:
         return jsonify(error="Erro interno ao consultar indicadores."), 500
 
+# --------------------------------------------------------------------------------------- #
+# Endpoint POST predict
+# --------------------------------------------------------------------------------------- #
 
 @api_bp.post("/predict")
 def predict():
@@ -609,6 +615,9 @@ def predict():
     except Exception:
         return jsonify(error="Internal server error"), 500
 
+# --------------------------------------------------------------------------------------- #
+# Endpoint GET metrics
+# --------------------------------------------------------------------------------------- #
 
 @api_bp.get("/metrics")
 def metrics():
@@ -710,6 +719,9 @@ def metrics():
             error="Erro interno ao recuperar métricas."
         ), 500
 
+# --------------------------------------------------------------------------------------- #
+# Endpoint GET health
+# --------------------------------------------------------------------------------------- #
 
 @api_bp.get("/health")
 def health():
