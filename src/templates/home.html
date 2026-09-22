@@ -10,9 +10,10 @@
   <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
   <style>
     :root {
-      --bg: #faf6ef;            /* areia claro */
+      --page-bg: #f4ece1;       /* areia claro (fundo da página) */
       --text: #4f4640;
       --placeholder: #968c82;
+      --note: #7d7167;
       --card-border: #d6c3b5;
       --field-bg: #eee2d4;
       --panel-bg: #dccdbd;
@@ -21,26 +22,44 @@
       --button-hover: #bb9e89;
       --row-odd: #f2e9de;
       --row-even: #e9ddcf;
+      --option-active: #e4d5c4;
       --error: #a4402f;
       --focus: #a98671;
       --radius: 8px;
       --shadow: 0 2px 6px rgba(94, 72, 52, 0.16);
+      --shadow-lg: 0 12px 40px rgba(94, 72, 52, 0.20);
     }
 
     * { box-sizing: border-box; }
 
     body {
       margin: 0;
-      background: var(--bg);
+      min-height: 100vh;
+      /* Fundo com variação suave de tons para o efeito translúcido do container aparecer */
+      background:
+        radial-gradient(circle at 12% 8%, #e8d7c3 0, transparent 42%),
+        radial-gradient(circle at 88% 92%, #e0caB3 0, transparent 46%),
+        radial-gradient(circle at 80% 15%, #f9f3ea 0, transparent 40%),
+        var(--page-bg);
+      background-attachment: fixed;
       color: var(--text);
       font-family: "Roboto", "Helvetica Neue", Helvetica, Arial, sans-serif;
       font-size: 14px;
+      /* margens laterais largas fora do retângulo */
+      padding: clamp(28px, 6vh, 64px) clamp(20px, 9vw, 150px) 32px;
     }
 
-    .page {
-      max-width: 1180px;
+    /* ---------- Retângulo que envolve a aplicação ---------- */
+    .app {
+      max-width: 1240px;
       margin: 0 auto;
-      padding: clamp(40px, 8vh, 84px) 32px 28px;
+      padding: clamp(24px, 4vh, 40px) 40px 28px;
+      background: rgba(255, 252, 247, 0.58);
+      -webkit-backdrop-filter: blur(14px) saturate(1.1);
+      backdrop-filter: blur(14px) saturate(1.1);
+      border: 1px solid rgba(255, 255, 255, 0.75);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-lg);
     }
 
     /* ---------- Cabeçalho ---------- */
@@ -49,7 +68,7 @@
       justify-content: space-between;
       align-items: flex-start;
       gap: 24px;
-      margin-bottom: clamp(20px, 4vh, 36px);
+      margin-bottom: clamp(18px, 3.5vh, 32px);
     }
     header h1 { margin: 0 0 6px; font-size: 26px; font-weight: 500; letter-spacing: -0.01em; }
     header p { margin: 0; font-size: 14px; }
@@ -80,20 +99,30 @@
       border: 2px solid var(--card-border);
       border-radius: var(--radius);
       box-shadow: var(--shadow);
-      padding: 12px 24px 18px;
-      margin-bottom: 14px;
+      padding: 12px 24px 16px;
+      margin-bottom: 12px;
     }
-    .card h2 { margin: 0 0 12px; font-size: 15px; font-weight: 500; }
-    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 32px; align-items: start; }
+    .card h2 { margin: 0 0 10px; font-size: 15px; font-weight: 500; }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 32px; align-items: start; }
     .grid .full { grid-column: 1 / -1; }
 
-    .field { position: relative; }
+    .note { margin: 12px 2px 0; font-size: 12px; line-height: 1.45; color: var(--note); }
 
-    .field input,
-    .field select {
+    .field { position: relative; }
+    .field.open { z-index: 30; }  /* lista aberta fica acima dos campos seguintes */
+
+    /* Nome do campo acima dele (menor que os rótulos da coluna de resultados) */
+    .field > label {
+      display: block;
+      margin: 0 0 3px 2px;
+      font-size: 12px;
+      color: var(--placeholder);
+    }
+
+    .field input[type="text"] {
       width: 100%;
       height: 40px;
-      padding: 0 38px 0 16px;
+      padding: 0 16px;
       border: 2px solid transparent;
       border-radius: var(--radius);
       background-color: var(--field-bg);
@@ -102,28 +131,82 @@
       font-family: inherit;
       font-size: 14px;
       outline: none;
-      appearance: none;
-      -webkit-appearance: none;
       transition: border-color .15s;
     }
-    .field input { padding-right: 16px; }
-    .field input::placeholder { color: var(--placeholder); opacity: 1; }
-    .field input:focus,
-    .field select:focus-visible { border-color: var(--focus); }
-
-    /* Lista suspensa: título em cinza claro dentro do campo; categoria em cor de texto ao preencher */
-    .field select {
-      cursor: pointer;
-      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M0 0h12L6 8z' fill='%23625c57'/%3E%3C/svg%3E");
-      background-repeat: no-repeat;
-      background-position: right 14px center;
+    .field input[type="text"]::placeholder { color: var(--placeholder); opacity: 1; }
+    .field input[type="text"]:focus { border-color: var(--focus); }
+    .field input[type="text"]:disabled {
+      color: var(--text);
+      opacity: .75;
+      cursor: not-allowed;
     }
-    .field select:invalid { color: var(--placeholder); }
-    .field select option { color: var(--text); }
-
-    .field.has-error input { border-color: var(--error); }
+    .field.has-error input[type="text"] { border-color: var(--error); }
     .error-msg { margin: 4px 2px 0; font-size: 12px; color: var(--error); }
     .error-msg:empty { display: none; }
+
+    /* ---------- Lista suspensa customizada (abre abaixo do campo) ---------- */
+    .dropdown { position: relative; }
+    .dd-btn {
+      position: relative;
+      width: 100%;
+      height: 40px;
+      padding: 0 38px 0 16px;
+      border: 2px solid transparent;
+      border-radius: var(--radius);
+      background: var(--field-bg);
+      box-shadow: var(--shadow);
+      color: var(--text);
+      font-family: inherit;
+      font-size: 14px;
+      text-align: left;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      cursor: pointer;
+      outline: none;
+      transition: border-color .15s;
+    }
+    .dd-btn.is-placeholder { color: var(--placeholder); }
+    .dd-btn:focus-visible,
+    .field.open .dd-btn { border-color: var(--focus); }
+    .dd-btn::after {
+      content: "";
+      position: absolute;
+      right: 14px;
+      top: 50%;
+      margin-top: -4px;
+      border-left: 6px solid transparent;
+      border-right: 6px solid transparent;
+      border-top: 8px solid #625c57;
+      transition: transform .15s;
+    }
+    .field.open .dd-btn::after { transform: rotate(180deg); }
+
+    .dd-list {
+      position: absolute;
+      top: calc(100% + 4px);   /* começa logo abaixo do campo */
+      left: 0;
+      right: 0;
+      z-index: 40;
+      margin: 0;
+      padding: 4px;
+      list-style: none;
+      max-height: 232px;
+      overflow-y: auto;
+      background: #f8f1e8;
+      border: 2px solid var(--card-border);
+      border-radius: var(--radius);
+      box-shadow: 0 8px 20px rgba(94, 72, 52, 0.24);
+    }
+    .dd-list[hidden] { display: none; }
+    .dd-option {
+      padding: 8px 12px;
+      border-radius: var(--radius);
+      font-size: 14px;
+      cursor: pointer;
+    }
+    .dd-option.active { background: var(--option-active); }
+    .dd-option[aria-selected="true"] { font-weight: 500; }
 
     /* ---------- Painel direito ---------- */
     .panel {
@@ -177,9 +260,11 @@
     @media (max-width: 960px) {
       .layout { grid-template-columns: 1fr; gap: 16px; }
       header { flex-direction: column; }
+      .app { padding-left: 28px; padding-right: 28px; }
     }
     @media (max-width: 560px) {
-      .page { padding: 28px 16px 32px; }
+      body { padding: 16px 12px 24px; }
+      .app { padding: 20px 16px 20px; }
       .grid { grid-template-columns: 1fr; }
       .card { padding: 12px 16px 16px; }
       .links { flex-wrap: wrap; gap: 12px; }
@@ -187,7 +272,7 @@
   </style>
 </head>
 <body>
-  <div class="page">
+  <div class="app">
     <header>
       <div>
         <h1>Recomendação: canal de contato e propensão à conversão</h1>
@@ -210,17 +295,21 @@
           <h2>Dados de perfil</h2>
           <div class="grid">
             <div class="field" id="field-age">
-              <input type="text" id="age" name="age" placeholder="idade" inputmode="numeric" maxlength="3" aria-label="idade">
+              <label for="age">Idade</label>
+              <input type="text" id="age" name="age" placeholder="idade" inputmode="numeric" maxlength="3">
               <div class="error-msg" id="age-error" role="alert"></div>
             </div>
             <div class="field">
-              <select id="job" name="job" required aria-label="profissão"></select>
+              <label id="lbl-job" for="btn-job">Profissão</label>
+              <div class="dropdown" data-key="job"></div>
             </div>
             <div class="field">
-              <select id="marital" name="marital" required aria-label="estado civil"></select>
+              <label id="lbl-marital" for="btn-marital">Estado civil</label>
+              <div class="dropdown" data-key="marital"></div>
             </div>
             <div class="field">
-              <select id="education" name="education" required aria-label="escolaridade"></select>
+              <label id="lbl-education" for="btn-education">Escolaridade</label>
+              <div class="dropdown" data-key="education"></div>
             </div>
           </div>
         </section>
@@ -229,37 +318,50 @@
           <h2>Dados financeiros</h2>
           <div class="grid">
             <div class="field">
-              <select id="loan" name="loan" required aria-label="empréstimo pessoal"></select>
+              <label id="lbl-loan" for="btn-loan">Empréstimo pessoal</label>
+              <div class="dropdown" data-key="loan"></div>
             </div>
             <div class="field">
-              <select id="housing" name="housing" required aria-label="financiamento imobiliário"></select>
+              <label id="lbl-housing" for="btn-housing">Financiamento imobiliário</label>
+              <div class="dropdown" data-key="housing"></div>
             </div>
           </div>
         </section>
 
         <section class="card">
-          <h2>Período</h2>
+          <h2>Período*</h2>
           <div class="grid">
             <div class="field">
-              <select id="month" name="month" required aria-label="mês"></select>
+              <label id="lbl-month" for="btn-month">Mês</label>
+              <div class="dropdown" data-key="month"></div>
             </div>
             <div class="field">
-              <select id="year" name="year" required aria-label="ano"></select>
+              <label id="lbl-year" for="btn-year">Ano</label>
+              <div class="dropdown" data-key="year"></div>
             </div>
             <div class="field">
-              <select id="periodo_mes" name="periodo_mes" required aria-label="período do mês"></select>
+              <label id="lbl-periodo_mes" for="btn-periodo_mes">Período do mês</label>
+              <div class="dropdown" data-key="periodo_mes"></div>
             </div>
             <div class="field">
-              <select id="day_of_week" name="day_of_week" required aria-label="dia da semana"></select>
+              <label id="lbl-day_of_week" for="btn-day_of_week">Dia da semana</label>
+              <div class="dropdown" data-key="day_of_week"></div>
             </div>
           </div>
+          <p class="note">* As tabelas de indicadores econômicos não cobrem todas as combinações de ano e mês. Caso a combinação selecionada não esteja disponível, os indicadores não serão preenchidos e a recomendação retornará um erro.</p>
         </section>
 
         <section class="card">
           <h2>Campanha anterior</h2>
           <div class="grid">
-            <div class="field full">
-              <select id="poutcome" name="poutcome" required aria-label="resultado da campanha anterior"></select>
+            <div class="field">
+              <label id="lbl-poutcome" for="btn-poutcome">Resultado da campanha anterior</label>
+              <div class="dropdown" data-key="poutcome"></div>
+            </div>
+            <div class="field" id="field-previous">
+              <label for="previous">Quantidade de contatos</label>
+              <input type="text" id="previous" name="previous" placeholder="quantidade de contatos" inputmode="numeric" maxlength="1">
+              <div class="error-msg" id="previous-error" role="alert"></div>
             </div>
           </div>
         </section>
@@ -303,45 +405,183 @@
   <script>
     (function () {
       var AGE_MIN = 17, AGE_MAX = 98;
+      var PREVIOUS_MIN = 1, PREVIOUS_MAX = 7;
 
       // Título de cada lista suspensa (aparece em cinza claro dentro do campo) e suas categorias
       var SELECTS = {
         job:         { title: 'profissão', options: ['student', 'housemaid', 'services', 'admin.', 'blue-collar', 'technician', 'management', 'unemployed', 'self-employed', 'entrepreneur', 'retired', 'unknown'] },
         marital:     { title: 'estado civil', options: ['single', 'married', 'divorced', 'unknown'] },
         education:   { title: 'escolaridade', options: ['illiterate', 'basic.4y', 'basic.6y', 'basic.9y', 'high.school', 'professional.course', 'university.degree', 'unknown'] },
-        loan:        { title: 'Empréstimo pessoal', options: ['yes', 'no', 'unknown'] },
-        housing:     { title: 'Financiamento imobiliário', options: ['yes', 'no', 'unknown'] },
+        loan:        { title: 'empréstimo pessoal', options: ['yes', 'no', 'unknown'] },
+        housing:     { title: 'financiamento imobiliário', options: ['yes', 'no', 'unknown'] },
         month:       { title: 'mês', options: ['03. mar', '04. apr', '05. may', '06. jun', '07. jul', '08. aug', '09. sep', '10. oct', '11. nov', '12. dec'] },
         year:        { title: 'ano', options: ['2008', '2009', '2010'] },
         periodo_mes: { title: 'período do mês', options: ['início', 'meio', 'fim'] },
         day_of_week: { title: 'dia da semana', options: ['1. mon', '2. tue', '3. wed', '4. thu', '5. fri'] },
-        poutcome:    { title: 'Resultado da campanha anterior', options: ['success', 'failure', 'nonexistent'] }
+        poutcome:    { title: 'resultado da campanha anterior', options: ['success', 'failure', 'nonexistent'] }
       };
 
       var ageInput = document.getElementById('age');
       var ageField = document.getElementById('field-age');
       var ageError = document.getElementById('age-error');
+      var previousInput = document.getElementById('previous');
+      var previousField = document.getElementById('field-previous');
+      var previousError = document.getElementById('previous-error');
       var outContact = document.getElementById('out-contact');
       var outAccept = document.getElementById('out-accept');
       var statusEl = document.getElementById('status');
 
-      // Popula as listas suspensas
-      Object.keys(SELECTS).forEach(function (id) {
-        var sel = document.getElementById(id);
-        var placeholder = document.createElement('option');
-        placeholder.value = '';
-        placeholder.textContent = SELECTS[id].title;
-        placeholder.disabled = true;
-        placeholder.selected = true;
-        placeholder.hidden = true;
-        sel.appendChild(placeholder);
-        SELECTS[id].options.forEach(function (value) {
-          var opt = document.createElement('option');
-          opt.value = value;
-          opt.textContent = value;
-          sel.appendChild(opt);
+      // ---------- Listas suspensas customizadas ----------
+      var dropdowns = [];
+
+      function buildDropdown(key, cfg, onChange) {
+        var root = document.querySelector('.dropdown[data-key="' + key + '"]');
+        var field = root.closest('.field');
+        var listId = 'list-' + key;
+        var selected = -1, active = -1, isOpen = false;
+
+        var hidden = document.createElement('input');   // guarda o valor escolhido (id = chave do campo)
+        hidden.type = 'hidden';
+        hidden.id = key;
+        hidden.name = key;
+
+        var btn = document.createElement('button');
+        btn.type = 'button';
+        btn.id = 'btn-' + key;
+        btn.className = 'dd-btn is-placeholder';
+        btn.textContent = cfg.title;
+        btn.setAttribute('role', 'combobox');
+        btn.setAttribute('aria-haspopup', 'listbox');
+        btn.setAttribute('aria-expanded', 'false');
+        btn.setAttribute('aria-controls', listId);
+        btn.setAttribute('aria-labelledby', 'lbl-' + key);
+
+        var list = document.createElement('ul');
+        list.id = listId;
+        list.className = 'dd-list';
+        list.setAttribute('role', 'listbox');
+        list.setAttribute('aria-labelledby', 'lbl-' + key);
+        list.hidden = true;
+
+        var items = cfg.options.map(function (value, i) {
+          var li = document.createElement('li');
+          li.id = 'opt-' + key + '-' + i;
+          li.className = 'dd-option';
+          li.setAttribute('role', 'option');
+          li.setAttribute('aria-selected', 'false');
+          li.dataset.value = value;
+          li.textContent = value;
+          list.appendChild(li);
+          return li;
         });
-        sel.addEventListener('change', onFormChange);
+
+        root.appendChild(hidden);
+        root.appendChild(btn);
+        root.appendChild(list);
+
+        var api = { root: root, close: close };
+        dropdowns.push(api);
+
+        function setActive(i) {
+          if (active >= 0) items[active].classList.remove('active');
+          active = i;
+          if (i >= 0) {
+            items[i].classList.add('active');
+            btn.setAttribute('aria-activedescendant', items[i].id);
+            items[i].scrollIntoView({ block: 'nearest' });
+          } else {
+            btn.removeAttribute('aria-activedescendant');
+          }
+        }
+        function open() {
+          closeAll(api);
+          isOpen = true;
+          list.hidden = false;
+          field.classList.add('open');
+          btn.setAttribute('aria-expanded', 'true');
+          setActive(selected >= 0 ? selected : 0);
+        }
+        function close() {
+          if (!isOpen) return;
+          isOpen = false;
+          list.hidden = true;
+          field.classList.remove('open');
+          btn.setAttribute('aria-expanded', 'false');
+          setActive(-1);
+        }
+        function choose(i) {
+          if (selected >= 0) items[selected].setAttribute('aria-selected', 'false');
+          selected = i;
+          items[i].setAttribute('aria-selected', 'true');
+          btn.textContent = items[i].dataset.value;
+          btn.classList.remove('is-placeholder');
+          hidden.value = items[i].dataset.value;
+          close();
+          if (onChange) onChange(items[i].dataset.value);
+          onFormChange();
+        }
+
+        btn.addEventListener('click', function (e) {
+          if (isOpen) {
+            // Enter/Espaço (detail === 0) confirma a opção destacada; clique do mouse apenas fecha
+            if (e.detail === 0 && active >= 0) choose(active); else close();
+          } else {
+            open();
+          }
+        });
+        btn.addEventListener('keydown', function (e) {
+          if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            if (!isOpen) open(); else setActive(Math.min(active + 1, items.length - 1));
+          } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            if (!isOpen) open(); else setActive(Math.max(active - 1, 0));
+          } else if (e.key === 'Home' && isOpen) {
+            e.preventDefault(); setActive(0);
+          } else if (e.key === 'End' && isOpen) {
+            e.preventDefault(); setActive(items.length - 1);
+          } else if (e.key === 'Escape' && isOpen) {
+            e.preventDefault(); close();
+          } else if (e.key === 'Tab') {
+            close();
+          }
+        });
+        btn.addEventListener('blur', close);
+
+        list.addEventListener('mousedown', function (e) { e.preventDefault(); }); // mantém o foco no botão
+        list.addEventListener('mouseover', function (e) {
+          var li = e.target.closest('.dd-option');
+          if (li) setActive(items.indexOf(li));
+        });
+        list.addEventListener('click', function (e) {
+          var li = e.target.closest('.dd-option');
+          if (li) choose(items.indexOf(li));
+        });
+      }
+
+      function closeAll(except) {
+        dropdowns.forEach(function (d) { if (d !== except) d.close(); });
+      }
+      // Safari não foca botões ao clicar, então também fechamos ao clicar fora
+      document.addEventListener('mousedown', function (e) {
+        dropdowns.forEach(function (d) { if (!d.root.contains(e.target)) d.close(); });
+      });
+
+      // "Quantidade de contatos": fica travado em 0 quando o resultado é "nonexistent";
+      // nos demais casos, o usuário preenche um valor entre 1 e 7.
+      function updatePreviousField(poutcomeValue) {
+        if (poutcomeValue === 'nonexistent') {
+          previousInput.value = '0';
+          previousInput.disabled = true;
+          setPreviousError('');
+        } else {
+          if (previousInput.disabled) previousInput.value = '';
+          previousInput.disabled = false;
+        }
+      }
+
+      Object.keys(SELECTS).forEach(function (key) {
+        buildDropdown(key, SELECTS[key], key === 'poutcome' ? updatePreviousField : null);
       });
 
       // ---------- Idade: apenas números, entre 17 e 98 ----------
@@ -369,6 +609,32 @@
         onFormChange();
       });
       ageInput.addEventListener('blur', function () { validateAge(true); });
+
+      // ---------- Quantidade de contatos: apenas números, entre 1 e 7 ----------
+      function validatePrevious(force) {
+        if (val('poutcome') === 'nonexistent') { setPreviousError(''); return true; }
+        var raw = previousInput.value;
+        if (raw === '') { setPreviousError(''); return false; }
+        var n = parseInt(raw, 10);
+        var ok = n >= PREVIOUS_MIN && n <= PREVIOUS_MAX;
+        if (!ok && force) {
+          setPreviousError('valor deve estar entre ' + PREVIOUS_MIN + ' e ' + PREVIOUS_MAX);
+        } else if (ok) {
+          setPreviousError('');
+        }
+        return ok;
+      }
+      function setPreviousError(msg) {
+        previousError.textContent = msg;
+        previousField.classList.toggle('has-error', !!msg);
+      }
+      previousInput.addEventListener('input', function () {
+        var cleaned = previousInput.value.replace(/\D/g, '');
+        if (cleaned !== previousInput.value) previousInput.value = cleaned;
+        validatePrevious(false);
+        onFormChange();
+      });
+      previousInput.addEventListener('blur', function () { validatePrevious(true); });
 
       // ---------- Indicadores ----------
       var indicatorSeq = 0;
@@ -418,8 +684,9 @@
       function showStatus(msg) { statusEl.textContent = msg || ''; }
 
       function collect() {
-        var payload = { age: ageInput.value };
+        var payload = { age: ageInput.value, previous: previousInput.value };
         var complete = ageInput.value !== '' && validateAge(false);
+        complete = complete && validatePrevious(false);
         Object.keys(SELECTS).forEach(function (id) {
           payload[id] = val(id);
           if (!payload[id]) complete = false;

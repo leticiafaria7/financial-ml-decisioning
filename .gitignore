@@ -217,9 +217,9 @@ __marimo__/
 # Streamlit
 .streamlit/secrets.toml
 
-# Dados
+# Pastas
 data/
-data_selection.ipynb
+tests/
 
 # mac
 .DS_Store

@@ -56,6 +56,9 @@ CATEGORIES: dict[str, list[str]] = {
 PERIODO_MES_OPTIONS = ["início", "meio", "fim"]
 VALID_YEARS = [2008, 2009, 2010]
 AGE_MIN, AGE_MAX = 17, 98
+# Quantidade de contatos antes desta campanha: 0 quando poutcome == "nonexistent",
+# senão um valor entre 1 e 7 informado pelo usuário.
+PREVIOUS_MIN, PREVIOUS_MAX = 1, 7
 
 # Variáveis do modelo (o bundle traz a lista oficial em `context_features`)
 MODEL_FEATURES = [
@@ -233,16 +236,23 @@ def _validate(payload: dict[str, Any]) -> dict[str, Any]:
         if value not in allowed:
             raise ValidationError(f"Valor inválido para '{field}': {value!r}")
         clean[field] = value
+
+    # Quantidade de contatos antes desta campanha: fixa em 0 quando não houve
+    # campanha anterior; caso contrário, deve ser informada pelo usuário (1 a 7).
+    if clean["poutcome"] == "nonexistent":
+        clean["previous"] = 0
+    else:
+        try:
+            previous = int(str(payload.get("previous", "")).strip())
+        except (TypeError, ValueError):
+            raise ValidationError("quantidade de contatos: informe apenas números") from None
+        if not PREVIOUS_MIN <= previous <= PREVIOUS_MAX:
+            raise ValidationError(
+                f"quantidade de contatos: valor deve estar entre {PREVIOUS_MIN} e {PREVIOUS_MAX}"
+            )
+        clean["previous"] = previous
+
     return clean
-
-
-def _derive_previous(poutcome: str) -> int:
-    """`previous` (nº de contatos antes desta campanha) não está no formulário.
-
-    Aproximação: sem campanha anterior ('nonexistent') => 0; caso contrário => 1.
-    Se quiser o valor real, adicione um campo na home e envie `previous` no payload.
-    """
-    return 0 if poutcome == "nonexistent" else 1
 
 
 def predict(payload: dict[str, Any]) -> dict[str, Any]:
@@ -256,11 +266,6 @@ def predict(payload: dict[str, Any]) -> dict[str, Any]:
         if item["value"] is None:
             raise LookupError(f"Indicador sem dados para o período: {item['label']}")
         data[item["key"]] = item["value"]
-
-    if "previous" in payload and str(payload["previous"]).strip() != "":
-        data["previous"] = int(payload["previous"])
-    else:
-        data["previous"] = _derive_previous(data["poutcome"])
 
     bundle = _get_bundle()
     preprocessor = bundle["preprocessor"]
