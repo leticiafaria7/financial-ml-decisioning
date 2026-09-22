@@ -13,12 +13,10 @@ if ENV_LOCAL.exists():
     load_dotenv(ENV_LOCAL)
 elif ENV.exists():
     load_dotenv(ENV)
-else:
-    raise RuntimeError("Arquivo .env.local ou .env não encontrado.")
+
 
 DATABASE_URL = os.getenv("DATABASE_URL")
 DATABASE_URL_UNPOOLED = os.getenv("DATABASE_URL_UNPOOLED")
-
 NEON_BRANCH = os.getenv("NEON_BRANCH")
 
 NEON_S3_BUCKET = os.getenv("NEON_S3_BUCKET", "model-artifacts")
@@ -28,15 +26,22 @@ AWS_SECRET_ACCESS_KEY = os.getenv("AWS_SECRET_ACCESS_KEY")
 AWS_ENDPOINT_URL_S3 = os.getenv("AWS_ENDPOINT_URL_S3")
 AWS_REGION = os.getenv("AWS_REGION")
 
-MLFLOW_TRACKING_URI = os.getenv("MLFLOW_TRACKING_URI", "http://127.0.0.1:5000")
+MLFLOW_TRACKING_URI = os.getenv(
+    "MLFLOW_TRACKING_URI",
+    "http://127.0.0.1:5000"
+)
 
 
 def validar_database():
+
     if not DATABASE_URL:
-        raise RuntimeError("DATABASE_URL não foi definida no .env.")
+        raise RuntimeError(
+            "DATABASE_URL não foi definida nas variáveis de ambiente."
+        )
 
 
 def validar_object_storage():
+
     required = {
         "NEON_S3_BUCKET": NEON_S3_BUCKET,
         "AWS_ACCESS_KEY_ID": AWS_ACCESS_KEY_ID,
@@ -52,5 +57,7 @@ def validar_object_storage():
     ]
 
     if missing:
-        raise RuntimeError(f"Variáveis ausentes: {', '.join(missing)}")
+        raise RuntimeError(
+            f"Variáveis de ambiente ausentes: {', '.join(missing)}"
+        )
     
