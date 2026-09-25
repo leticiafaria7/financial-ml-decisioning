@@ -1,6 +1,8 @@
 # Plataforma de recomendação adaptativa em canais digitais com abordagem Multi-Armed Bandit
 
 *Tech Challenge da Fase 5 do curso de [pós-graduação em Engenharia de Machine Learning FIAP](https://postech.fiap.com.br/curso/machine-learning-engineering/)*
+
+**Link para a aplicação / API:** https://financial-ml-decisioning.onrender.com/
 > *📽️ Vídeo com demonstração técnica do projeto (em breve)*
 
 ## 🎯 1. Sobre o projeto
@@ -103,8 +105,8 @@ Os resultados obtidos, portanto, demonstram o comportamento e o potencial da abo
 - year: se fazemos split temporal, não faz sentido usar o ano (os anos da fração de teste não estarão na fração de treino)
 
 **Braços**
-1. Braço 1: term deposit via celular
-2. Braço 2: term deposit via telefone
+1. Braço 1: oferecer term deposit via celular
+2. Braço 2: oferecer sterm deposit via telefone
 
 **Reward** (coluna 'y')
 - yes: conversão
@@ -122,28 +124,123 @@ O Thompson Sampling, porém, oferece uma combinação adequada de fundamentaçã
 
 Dessa forma, o LinTS será utilizado como política adaptativa principal e comparado a um baseline determinístico, mantendo o escopo do projeto mais simples sem perder a demonstração dos principais conceitos de exploração, explotação e personalização.
 
-## ⚙️ 2. Funcionalidades da aplicação
+> ### 📈 Resultados do modelo
 
-- Receber dados de um cliente/contexto
-- Gerar a recomendação de braço/oferta
-- Retornar a oferta recomendada
-- Retornar os scores/expectativas estimadas por braço para demonstração
-- Registrar a versão do modelo/política utilizada
+
+
+## ⚙️ 2. Etapas do projeto
+
+- Download, leitura e pré-processamento dos dados
+- Treino do modelo
+    - Definição do baseline
+    - Definição de hiperparâmetros do modelo LinTS
+    - Treino do modelo LinTS
+    - Treino da LogisticRegression para calcular a probabilidade de conversão
+    - Criação do Golden Set (exemplos diversos para demonstração da recomendação)
+- Uso da ferramenta de versionamento MLFlow localmente
+    - Instalação e configuração do MLFlow
+    - Registro das métricas 
+    - Registro a versão do modelo/política utilizada
+- Uso do banco de dados Neon Database
+    - Criação de uma conta e de um projeto com object storage
+    - Persistência dos artefatos do modelo e tabelas auxiliares de valores de indicadores econômicos para servir os dados através da API
+    - Registro dos predicts feitos através de requisições da API
+- Desenvolvimento da API
+    - Receber dados de um cliente/contexto
+    - Gerar a recomendação de braço/oferta
+    - Retornar a oferta recomendada
+    - Criação de interface para receber inputs do usuário e retornar outputs de recomendação
+    - Deploy no render e monitoramento do health com UptimeRobot
 
 ## 📐 3. Arquitetura
 
 > *Em breve*
 
+> Arquitetura atual
+
+> Arquitetura prevista para AWS
+
+
 ## 📁 4. Estrutura do projeto
 
-Este repositório está dividido em 4 partes:
-
-1. Notebooks - EDA e demonstração (golden set)
-2. Implementação do bandit
-3. Construção da API
-4. Experimentos de MLFlow
-
-> *Tree - em breve*
+```
+financial-ml-decisioning
+├── data/                                           # dados brutos e tratados (ignorado)
+│   ├── raw/
+│   │   └── bank-marketing-data-set
+│   ├── trusted/
+│   │   ├── cons_conf_idx_mensal.parquet
+│   │   ├── cons_price_idx_mensal.parquet
+│   │   ├── emp_var_rate_mensal.parquet
+│   │   ├── euribor3m_mensal.parquet
+│   │   ├── nr_employed_mensal.parquet
+│   │   └── tabela_analitica.parquet
+│   └── refined/
+├── diagrams/                                       # diagramas arquiteturais
+│   ├── arquitetura_local.png
+│   └── arquitetura_aws.png
+├── mlops/                                          # arquivos de configuração do MLFlow
+│   ├── artifacts/
+│   ├── __init__.py
+│   ├── mlflow.db
+│   ├── start_mlflow.sh
+│   └── tracking.py
+├── models/                                         # artefatos dos modelos treinados (arquivos para inferência, metadados e resultados)
+│   ├── results/
+│   │   ├── avaliacao_lints_test.csv
+│   │   ├── baseline3_classificacao.csv
+│   │   ├── comparacao_politicas.csv
+│   │   ├── comparacao_por_braco.csv
+│   │   ├── comparacao_por_segmento.csv
+│   │   ├── metricas_lints.csv
+│   │   ├── metricas_reward_models.csv
+│   │   ├── tuning_runs_lints.csv
+│   │   └── tuning_summary_lints.csv
+│   ├── lints_bundle.joblib
+│   ├── lints_features.csv
+│   ├── lints_metadata.json
+│   ├── lints_model.joblib
+│   ├── preprocessor.joblib
+│   └── reward_models.joblib
+├── notebooks/                                      # EDA, treino do modelo e golden set
+│   ├── 1_eda.ipynb
+│   ├── 2_feature_eng.ipynb
+│   ├── 3_model_train.ipynb
+│   ├── 4_golden_set.ipynb
+│   ├── 5_upload_indicators_neon.ipynb
+│   └── 6_teste_api_prod.ipynb
+├── src/                                            # criação da API, interface da aplicação e configuração do neon database
+│   ├── api/
+│   │   ├── api_endpoints.py
+│   │   ├── home_backend.py
+│   │   └── predict_log.py
+│   ├── config/
+│   │   ├── __init__.py
+│   │   └── neon.py
+│   ├── static/
+│   │   ├── favicon.svg
+│   │   ├── github.svg
+│   │   └── swagger.svg
+│   ├── templates/
+│   │   └── home.html
+│   ├── __init__.py
+│   └── utils_eda.py
+├── tests/                                          # notebooks de teste (não vai para repositório remoto)
+│   ├── data_selection.ipynb
+│   ├── get_folder_tree.ipynb
+│   └── teste_neon.ipynb
+├── .env                                            # arquivo com as keys de conexão com o banco (ignorado)
+├── .gitignore
+├── .neon                                           # credenciais do projeto (ignorado)
+├── .python-version                                 # versão do python para render
+├── create_table_requests.py                        # criar a tabela no neon para registrar uso do endpoint /predict
+├── main.py                                         # arquivo principal da aplicação
+├── neon.ts                                         # configuração do neon
+├── package-lock.json                               # configuração do neon (ignorado)
+├── package.json                                    # configuração do neon
+├── README.md
+└── requirements.txt                                # libs necessárias para rodar o projeto
+```
 
 ## 🛠️ 5. Instruções de execução
 
@@ -194,24 +291,80 @@ python -m ipykernel install --user --name=venv-decisioning --display-name="Pytho
 python3 -m ipykernel install --user --name=venv-decisioning --display-name="Python (venv-decisioning)"
 ```
 
+### 5.2 Reproduzir feature engineering nos dados do Kaggle
 
-### 5.2 Iniciar API localmente
+Passos disponíveis no notebook [2_feature_eng.ipynb](notebooks/6_teste_api_prod.ipynb)
 
-### 5.3 Acessar Swagger
+### 5.3 Usar API localmente
+
+Passos disponíveis no notebook [6_teste_api_prod.ipynb](notebooks/6_teste_api_prod.ipynb)
+
+### 5.4 Acessar Swagger
+
+A documentação dos endpoints da API está disponível em https://financial-ml-decisioning.onrender.com/docs/
+
+### 5.5 Configurar Neon Database
+
+1. Acessar o site https://neon.com/
+2. Criar uma conta
+3. Acessar `+ New project` (para este projeto foi usado o nome `financial-ml-decisioning`)
+4. Criar um object storage (para este projeto foi usado o nome `model-artifacts`)
+5. No repositório local, criar um .env (colocar no `.gitignore` para não subir para o repositório remoto)
+6. No terminal, executar a sequência de comandos (compatíveis com MacOS):
+
+    ``` bash
+    # instalar neon
+    brew install neonctl
+
+    # ver a versão da lib
+    neonctl —version
+
+    # fazer autenticação no neon
+    neonctl auth
+
+    # 
+    neonctl link
+
+    # 
+    neon config init
+
+    # ver o plano de deploy do neon (antes de de fato executar a instalação, verifica se há algum erro)
+    neonctl config plan
+
+    # 
+    npm install @neon/config
+
+    #
+    neonctl env pull --service object-storage
+
+    # envia as chaves necessárias à conexão com supabase ao arquivo .env
+    grep -o '^[A-Za-z_][A-Za-z0-9_]*=' .env
+    ```
+
+7. Para fazer upload de tabelas: exemplo no notebook [5_upload_indicators_neon.ipynb](notebooks/5_upload_indicators_neon.ipynb)
+
+### 5.6 Configurar MLFlow
+
+> Em breve
 
 ## 🚀 6. Evolução do projeto
-
-- Implementar o projeto em uma cloud (AWS por exemplo)
-- Usar uma base de dados mais robusta (como explicado na parte de "Observações" da seção Fontes de dados)
-- Implantar logging e monitoramento de decisões
-- Criar experimento A/B ou contextual bandit real para coletar dados de novas ofertas
-- Evoluir de conversão binária para reward econômico, considerando valor da contratação e eventual custo da ação
-- Criar processo de retreinamento/atualização automática
-- Monitorar drift dos dados e alteração do comportamento por período
-- Usar braços de comunicação e oferta, como: abordagem padrão, abordagem personalizada por perfil, abordagem de follow-up, variações de mensagem/argumentação comercial
-- Criar uma tabela para registrar todas as requisições de todos os endpoints
 
 Limitações do projeto:
 - A base utilizada não registra qual oferta foi apresentada, então a avaliação de um bandit precisa explicitar como os "braços" serão definidos e como o reward será observado ou simulado
 - A base tem dados muito antigos (2008 a 2010), e os indicadores econômicos mudaram muito desde então. Seria necessário usar uma tabela mais atual para previsões mais precisas para os dias de hoje
 - A base não tem todos os meses de todos os anos e o volume de observações varia ao longo dos meses
+
+Ideias para **refinamento do modelo**:
+- Usar uma base de dados mais robusta (como explicado na parte de "Observações" da seção Fontes de dados)
+- Implementar logging e monitoramento de decisões
+- Criar experimento A/B ou contextual bandit real para coletar dados de novas ofertas
+- Usar braços de comunicação e oferta, como: abordagem padrão, abordagem personalizada por perfil, abordagem de follow-up, variações de mensagem/argumentação comercial
+- Evoluir de conversão binária para reward econômico, considerando valor da contratação e eventual custo da ação
+- Exploração mais exaustiva do conjunto de variáveis utiizadas e hiperparâmetros para melhorar a performance
+
+Ideias para **refinamento de infraestrutura**:
+- Implementar o projeto em uma cloud (AWS por exemplo)
+- Criar processo de retreinamento/atualização automática
+- Monitorar drift dos dados e alteração do comportamento por período
+- Criar uma tabela para registrar todas as requisições de todos os endpoints
+- Explorar mais a ferramenta MLFlow para versionamento
