@@ -8,20 +8,18 @@
 ## 🎯 1. Sobre o projeto
 O projeto tem como objetivo construir uma plataforma de experimentação adaptativa para ofertas, mensagens ou próximos passos em canais digitais para uma empresa de segmento financeiro usando [Multi-Armed Bandit](docs/multi_armed_bandit.md).
 
-A ideia é decidir, em diferentes canais, qual oferta, mensagem ou próximo passo apresentar para cada cliente elegível.
-
 > ### 🎲 Fontes de dados
 
-Os dados utilizados neste projeto foram dispolibilizados pelo perfil do usuário [tunguz](https://www.kaggle.com/tunguz) no site do Kaggle: [Bank Marketing Data Set](https://www.kaggle.com/datasets/tunguz/bank-marketing-data-set)
+Os dados utilizados neste projeto são provenientes do Kaggle: [Bank Marketing Data Set](https://www.kaggle.com/datasets/tunguz/bank-marketing-data-set)
 
-É uma tabela derivada do estudo publicado no artigo [A data-driven approach to predict the success of bank telemarketing](https://sci-hub.box/10.1016/j.dss.2014.03.001), de Moro at al., 2014.
+É uma tabela derivada do estudo publicado no artigo [A data-driven approach to predict the success of bank telemarketing](https://sci-hub.box/10.1016/j.dss.2014.03.001), de Moro *et al.*, 2014.
 
 - São dados de campanhas diretas de marketing (por telefone) de uma instituição bancária portuguesa.
 - A tabela tem 41.188 linhas e 21 colunas, sendo que a última informa se o cliente contratou o produto (term depoist), pode ser yes ou no.
 - Não há identificação dos clientes, apenas dados de perfil, de data, dados da campanha e dados econômicos do momento da ligação.
 - Os dados variam entre maio/2008 e novembro/2010 e estão ordenados por data (apenas mês e dia da semana)
 
-A análise exploratória está disponível no notebook [1_eda.ipynb](notebooks/eda.ipynb)
+A análise exploratória está disponível no notebook [1_eda.ipynb](notebooks/eda.ipynb).
 
 **Observações: Como a base utilizada não registra qual oferta foi apresentada, o reward usado no protótipo será a conversão do produto (term deposit).**
 
@@ -50,11 +48,40 @@ A análise exploratória está disponível no notebook [1_eda.ipynb](notebooks/e
 
 **Reward** (coluna 'y')
 - **yes**: conversão
-- **no**: não conversão
+- **no**: não 
+
+**Baseline**
+Oferecer o produto para todos que tem uma dessas características:
+- Mais de 60 anos
+- Até 25 anos
+- Aposentado
+- Estudante
+- Contratou na campanha anterior
 
 > ### 📈 Resultados do modelo
 
-> Em breve
+### Avaliação offline via replay
+
+A política adaptativa (contextual bandit com Thompson Sampling linear) foi comparada a uma regra fixa que sempre oferece o braço de melhor conversão histórica (`cellular`), usando o método de replay não-enviesado (Unbiased Offline Evaluation of Contextual-bandit-based News Article Recommendation Algorithms, Li *et al.*, 2010): o histórico é percorrido em ordem cronológica e cada rodada só é contabilizada — para ambas as políticas — quando a ação escolhida coincide com a ação de fato registrada nos dados.
+
+![Conversão acumulada: regra fixa vs. bandit adaptativo](models/results/cumulative_reward_comparison.png)
+
+A curva mostra o bandit adaptativo ultrapassando a regra fixa em alguns trechos do período, mas na maior parte do tempo sua conversão acumulada fica abaixo do baseline. Parte disso reflete uma mudança de regime entre os anos usados: 
+- em 2008 (treino) a conversão geral é de apenas 4,8%, com os canais quase empatados (50,5% cellular / 49,5% telephone); 
+- em 2009 (validação) a conversão sobe para 19,5%, já concentrada em cellular (91,8%); 
+- e em 2010 (teste) a conversão salta para 52,1%, com cellular em 81,1% dos contatos. 
+
+Como o bandit aprende a política com base no regime de baixa conversão de 2008–2009, ele carrega hipóteses que não se ajustam rapidamente ao salto de conversão observado em 2010. Como o método de replay só conta rodadas em que a recomendação do bandit coincide com a ação de fato registrada, os períodos em que `cellular` já dominava o histórico acabam favorecendo naturalmente a regra fixa nessa comparação. Isso indica não-estacionariedade na base (provável mudança de estratégia de campanha ao longo dos anos), e não necessariamente uma limitação do algoritmo em si.
+
+Os modelos auxiliares de recompensa (regressão logística por braço) também trazem sinais mistos frente ao baseline: 
+- o modelo do braço `cellular` supera bastante o baseline em recall (93,6% contra 62,4%), ao custo de uma precisão um pouco menor (58,8% contra 63,6%); ou seja, erra para menos clientes convertidos, mas com mais falsos positivos. 
+- já o modelo do braço `telephone` tem o padrão oposto: precisão levemente melhor que o baseline (65,2% contra 63,6%), mas recall bem mais baixo (27,3% contra 62,4%), sendo mais conservador na hora de recomendar esse canal. 
+
+Portanto, não é correto dizer que a regressão logística supera o baseline nas duas métricas simultaneamente; o ganho existe, mas é específico de cada braço, e é justamente essa especialização por contexto que o bandit tenta explorar.
+
+Por fim, vale registrar uma limitação estrutural da base usada: para cada cliente, o histórico só contém o resultado do canal efetivamente utilizado na campanha original, sem informação sobre o que teria acontecido caso o outro canal tivesse sido escolhido. Isso é um cenário clássico de "logged bandit feedback": em vez de executar um experimento com exploração simultânea entre braços, o que temos são dados observacionais de uma única política.
+
+Isso restringe a avaliação offline a métodos indiretos, como replay (que descarta boa parte do histórico para evitar viés) e estimativa via modelo de recompensa, ambos com limitações conhecidas. Um cenário mais adequado para demonstrar o ganho de uma abordagem adaptativa exigiria dados de um teste com alocação simultânea entre canais (ou o próprio bandit rodando em produção, escolhendo o canal para novos clientes), permitindo uma comparação causal mais direta entre a política fixa e a adaptativa.
 
 ## ⚙️ 2. Etapas e funcionalidades
 
