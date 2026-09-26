@@ -60,8 +60,6 @@ Oferecer o produto para todos que tem uma dessas características:
 
 > ### 📈 Resultados do modelo
 
-### Avaliação offline via replay
-
 A política adaptativa (contextual bandit com Thompson Sampling linear) foi comparada a uma regra fixa que sempre oferece o braço de melhor conversão histórica (`cellular`), usando o método de replay não-enviesado (Unbiased Offline Evaluation of Contextual-bandit-based News Article Recommendation Algorithms, Li *et al.*, 2010): o histórico é percorrido em ordem cronológica e cada rodada só é contabilizada — para ambas as políticas — quando a ação escolhida coincide com a ação de fato registrada nos dados.
 
 ![Conversão acumulada: regra fixa vs. bandit adaptativo](models/results/cumulative_reward_comparison.png)
