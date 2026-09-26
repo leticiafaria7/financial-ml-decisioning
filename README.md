@@ -126,7 +126,7 @@ Dessa forma, o LinTS será utilizado como política adaptativa principal e compa
 
 > ### 📈 Resultados do modelo
 
-
+> Em breve
 
 ## ⚙️ 2. Etapas do projeto
 
@@ -154,11 +154,25 @@ Dessa forma, o LinTS será utilizado como política adaptativa principal e compa
 
 ## 📐 3. Arquitetura
 
-> *Em breve*
+A arquitetura do projeto como foi construído (on-premise) pode ser observada no diagrama abaixo
 
-> Arquitetura atual
+![Arquitetura](diagrams/arquitetura.png)
 
-> Arquitetura prevista para AWS
+Se o projeto fosse colocado no ar usando os serviços da AWS, seriam utilizados os seguintes recursos:
+
+- Na etapa de fontes de dados e feature engineering, o dataset baixado do Kaggle poderia ser armazenado em um bucket do **Amazon S3,** que funcionaria como data lake bruto (camada raw) e, após o processamento, também guardaria as tabelas mensais de indicadores econômicos e a base já tratada (camada trusted). 
+
+- O processamento de criação da coluna de ano e da divisão temporal do train_test_split poderia ser feito em notebooks ou jobs do **Amazon SageMaker Processing** (ou, para um pipeline mais leve, em uma função **AWS Lambda** ou em um job do **AWS Glue**), lendo os dados diretamente do **S3** e regravando as tabelas processadas também no **S3**. 
+
+- Já a etapa de treino do modelo — definição de baseline, hiperparâmetros, treino do LinTS e da LogisticRegression — seria natural no **Amazon SageMaker Training**, que permite rodar os treinos em instâncias gerenciadas, versionar os experimentos e, combinado ao **SageMaker Model Registry**, substituir ou complementar o papel do MLflow no versionamento dos artefatos do modelo.
+
+- Para a persistência dos dados, o Neon Database poderia ser substituído por um banco gerenciado na AWS, como o **Amazon RDS for PostgreSQL** (equivalente relacional direto) ou o **Amazon DynamoDB**, caso o padrão de acesso aos artefatos e predições fosse mais simples e orientado a chave-valor.
+
+- Os artefatos do modelo (pesos, preprocessador, bandit) continuariam também versionados no **S3**, com o banco guardando metadados e resultados das predições. 
+
+- Na etapa de desenvolvimento e deploy da API, a aplicação Flask poderia ser empacotada em contêiner e implantada no **Amazon ECS** (Fargate) ou no **AWS App Runner**, com o tráfego exposto por um **Application Load Balancer** e, opcionalmente, o **Amazon API Gateway** na frente para gerenciar os endpoints /api/predict e /api/health. 
+
+- O monitoramento, hoje feito pelo UptimeRobot, seria coberto pelo **Amazon CloudWatch** (métricas, logs e alarmes de saúde do serviço) combinado a checagens periódicas via **CloudWatch Synthetics** ou **Route 53 Health Checks**, mantendo a mesma função de verificar continuamente a disponibilidade do endpoint de saúde da API.
 
 
 ## 📁 4. Estrutura do projeto
@@ -177,8 +191,7 @@ financial-ml-decisioning
 │   │   └── tabela_analitica.parquet
 │   └── refined/
 ├── diagrams/                                       # diagramas arquiteturais
-│   ├── arquitetura_local.png
-│   └── arquitetura_aws.png
+│   └── arquitetura.png
 ├── mlops/                                          # arquivos de configuração do MLFlow
 │   ├── artifacts/
 │   ├── __init__.py
