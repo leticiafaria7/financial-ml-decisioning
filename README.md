@@ -6,30 +6,9 @@
 > *📽️ Vídeo com demonstração técnica do projeto (em breve)*
 
 ## 🎯 1. Sobre o projeto
-O projeto tem como objetivo construir uma plataforma de experimentação adaptativa para ofertas, mensagens ou próximos passos em canais digitais para uma empresa de segmento financeiro usando Multi-Armed Bandit.
+O projeto tem como objetivo construir uma plataforma de experimentação adaptativa para ofertas, mensagens ou próximos passos em canais digitais para uma empresa de segmento financeiro usando [Multi-Armed Bandit](docs/multi_armed_bandit.md).
 
 A ideia é decidir, em diferentes canais, qual oferta, mensagem ou próximo passo apresentar para cada cliente elegível.
-
-> ### 🎰 Multi-Armed Bandit
-
-É uma abordagem adaptativa que visa identificar comportamentos distintos, equilibrar exploração e explotação e aprender com respostas observadas, sem congelar a decisão em regras estáticas.
-
-O nome desta abordagem vem da ideia de um jogador diante de várias máquinas caça-níqueis, em que cada máquina tem uma alavanca ("arm"); bandit vem da expressão "one-armed bandit", apelido das máquinas caça-níqueis.
-
-Generalizando, multi-armed bandit é um problema em que um tomador de decisões iterativamente seleciona uma de múltiplas opções fixas quando as propriedades de cada opção são apenas parcialmente conhecidas no momento da escolha, e se tornam mais compreendidas à medida em que o tempo passa. Um aspecto fundamental de problemas bandit é que o fato de escolher um "arm" não afeta as propriedades deste ou de outros "arms".
-
-É um problema clássico de reinforcement learning (aprendizado por reforço) que exemplifica o dilema do tradeoff entre exploração e explotação; em contraste ao reinforcement learning geral, as ações selecionadas nos problemas bandit não afetam a distribuição de recompensas nos arms.
-
-No contexto de soluções de marketing, pode ser empregado em alternativa ao uso de regras fixas e testes A/B longos que desperdiçam tráfego e que demoram para reagir a mudanças de contexto, permitindo a personalização responsável de ofertas de acordo com o perfil de comportamento de cada usuário.
-
-Os principais algoritmos usados em soluções multi-armed bandit são:
-
-| Técnica | Descrição | Como pode ser aplicado no contexto de marketing |
-| --- | --- | --- |
-| **Thompson Sampling** | Baseia-se na atualização de distribuições de probabilidade sobre a performance de cada alternativa, equilibrando exploração e explotação de acordo com a incerteza sobre seus resultados | Selecionar dinamicamente a oferta, mensagem ou próximo passo mais promissor para cada cliente, aprendendo continuamente a partir das respostas observadas |
-| **Epsilon-Greedy** | Baseia-se na escolha da alternativa com melhor desempenho conhecido na maior parte das vezes, reservando uma probabilidade ε para explorar outras alternativas | Priorizar a oferta ou mensagem com maior desempenho observado, enquanto uma parcela dos clientes recebe alternativas menos exploradas para descobrir novas oportunidades |
-| **UCB (Upper Confidence Bound)** | Baseia-se na combinação do desempenho observado de cada alternativa com um intervalo de confiança que favorece opções com maior incerteza ou menor número de observações | Selecionar ofertas ou mensagens considerando tanto seu desempenho histórico quanto o potencial de alternativas ainda pouco exploradas |
-
 
 > ### 🎲 Fontes de dados
 
@@ -44,91 +23,40 @@ Os dados utilizados neste projeto foram dispolibilizados pelo perfil do usuário
 
 A análise exploratória está disponível no notebook [1_eda.ipynb](notebooks/eda.ipynb)
 
-**Observações: Como a base utilizada não registra qual oferta foi apresentada, o reward usado no protótipo será a conversão do term deposit.**
-
-> **CENÁRIO IDEAL**
-
-Em um cenário ideal para a implementação e avaliação de uma política de Multi-Armed Bandit, a base de dados registraria, para cada decisão:
-- o contexto do cliente
-- o conjunto de ofertas disponíveis
-- a oferta efetivamente selecionada como braço
-- a probabilidade de seleção dessa oferta pela política vigente (selection probability/propensity)
-- o reward observado após a interação, como a conversão
-
-Essa estrutura permitiria avaliar de forma mais rigorosa diferentes políticas adaptativas e realizar técnicas de avaliação off-policy.
-
-Além disso, seria interessante que a base de dados utilizada fosse derivada de um experimento randomizado, e não de eventos observacionais.
-
-> **CENÁRIO REAL**
-
-Para o escopo simplificado deste projeto, será utilizada a base supracitada (conforme recomendado na descrição do tech challenge) que contém:
-- características dos clientes
-- informações das campanhas de marketing
-- forma de contato (celular ou telefone)
-- o resultado da contratação de um depósito a prazo
-
-O principal ponto de limitação para a abordagem multi-armed bandit é que a tabela NÃO registra diferentes ofertas nem as probabilidades históricas de seleção. 
-
-Dessa forma, o projeto deve ser entendido como uma demonstração controlada dos conceitos de Multi-Armed Bandit, na qual os braços e o processo de decisão são definidos ou simulados a partir das informações disponíveis, permitindo comparar estratégias como Thompson Sampling, Epsilon-Greedy e UCB com um baseline determinístico.
-
-Os resultados obtidos, portanto, demonstram o comportamento e o potencial da abordagem adaptativa dentro das premissas do experimento, e não devem ser interpretados como uma estimativa causal do ganho que seria obtido por uma política de ofertas implantada em produção. 
+**Observações: Como a base utilizada não registra qual oferta foi apresentada, o reward usado no protótipo será a conversão do produto (term deposit).**
 
 > ### 🦾 Definições do bandit
 
 **Features utilizadas**
 
-| Tipo                   | Feature                                                          |
-| ---------------------- | ---------------------------------------------------------------- |
-| Perfil                 | Idade                                                            |
-| Perfil                 | Faixa etária                                                     |
-| Perfil                 | Profissão                                                        |
-| Perfil                 | Estado civil                                                     |
-| Perfil                 | Escolaridade                                                     |
-| Crédito                | Se tem financiamento imobiliário                                 |
-| Crédito                | Se tem empréstimo pessoal                                        |
-| Data                   | Mês                                                              |
-| Data                   | Dia da semana                                                    |
-| Campanhas anteriores   | Quantos contatos teve em campanhas anteriores                    |
-| Campanhas anteriores   | Resultado da campanha anterior (sucesso, falha ou não existente) |
-| Indicadores econômicos | Consumer confidence index — indicador mensal                     |
-| Indicadores econômicos | Consumer price index — indicador mensal                          |
-| Indicadores econômicos | Employment variation rate — indicador trimestral                 |
-| Indicadores econômicos | Euribor 3 month rate — indicador diário                          |
-| Indicadores econômicos | Number of employees — indicador trimestral                       |
-
+| Tipo | Feature |
+| --- | --- |
+| Perfil | Idade<br>Faixa etária<br>Profissão<br>Estado civil<br>Escolaridade|
+| Crédito | Se tem financiamento imobiliário<br>Se tem empréstimo pessoal|
+| Data | Mês<br>Dia da semana|
+| Campanhas anteriores | Quantos contatos teve em campanhas anteriores<br>Resultado da campanha anterior (sucesso, falha ou não existente)|
+| Indicadores econômicos | Consumer confidence index (indicador mensal)<br>Consumer price index (indicador mensal)<br>Employment variation rate (indicador trimestral)<br>Euribor 3 month rate (indicador diário)<br>Number of employees (indicador trimestral)|
 
 **Variáveis removidas da tabela original**
-- campaign: não faz sentido usar a quantidade de contatos durante a campanha porque isso não necessariamente será usado ao fazer o predict
-- duration: não tem como saber qual será a duração da ligação ao fazer o contato
-- pdays: a maioria é 999 (equivalente a null)
-- default (se tem crédito por padrão): apenas 3 estão como yes, o resto é no ou unknown
-- year: se fazemos split temporal, não faz sentido usar o ano (os anos da fração de teste não estarão na fração de treino)
+- **campaign**: não faz sentido usar a quantidade de contatos durante a campanha porque isso não necessariamente será usado ao fazer o predict
+- **duration**: não tem como saber qual será a duração da ligação ao fazer o contato
+- **pdays**: a maioria é 999 (equivalente a null)
+- **default** (se tem crédito por padrão): apenas 3 estão como yes, o resto é no ou unknown
+- **year**: se fazemos split temporal, não faz sentido usar o ano (os anos da fração de teste não estarão na fração de treino)
 
 **Braços**
-1. Braço 1: oferecer term deposit via celular
-2. Braço 2: oferecer sterm deposit via telefone
+1. **Braço 1:** oferecer term deposit via celular
+2. **Braço 2:** oferecer term deposit via telefone
 
 **Reward** (coluna 'y')
-- yes: conversão
-- no: não conversão
-
-> ### 🧠 Escolha do algoritmo
-
-O estudo descrito no artigo [Improving Online Marketing Experiments with Drifting Multi-armed Bandits](https://www.scitepress.org/papers/2015/54587/54587.pdf) (Burtini et al. 2015) cita os 3 algoritmos e alguns outros para serem aplicados em um experimento de marketing, mas escolhe testar o Thompson Sampling por ser o estado da arte no tratamento de regression bandits não estacionários (em constante mudança), e porque os resultados dos demais algoritmos (ε-greedy e UCB) tiveram performance muito inferior.
-
-Considerando a base de dados disponível e as aplicações possíveis de cada algoritmo, a abordagem escolhida será o **Thompson Sampling** em sua versão contextual, preferencialmente o Linear Thompson Sampling (LinTS), por combinar uma estratégia de **exploração baseada na incerteza** com a capacidade de **considerar características do cliente** na escolha da ação. 
-
-Embora Epsilon-Greedy seja mais simples de implementar, sua exploração é essencialmente aleatória e depende da definição do parâmetro epsilon, enquanto o UCB também apresenta uma estratégia robusta baseada em incerteza e constitui uma alternativa válida.
-
-O Thompson Sampling, porém, oferece uma combinação adequada de fundamentação teórica, bom desempenho empírico e interpretabilidade para o contexto deste projeto. A utilização de uma versão contextual é particularmente importante, pois permite que variáveis como idade, profissão, histórico de campanhas e contexto econômico influenciem a recomendação, em vez de aprender apenas qual braço apresenta maior conversão média para toda a população. 
-
-Dessa forma, o LinTS será utilizado como política adaptativa principal e comparado a um baseline determinístico, mantendo o escopo do projeto mais simples sem perder a demonstração dos principais conceitos de exploração, explotação e personalização.
+- **yes**: conversão
+- **no**: não conversão
 
 > ### 📈 Resultados do modelo
 
 > Em breve
 
-## ⚙️ 2. Etapas do projeto
+## ⚙️ 2. Etapas e funcionalidades
 
 - Download, leitura e pré-processamento dos dados
 - Treino do modelo
@@ -192,6 +120,10 @@ financial-ml-decisioning
 │   └── refined/
 ├── diagrams/                                       # diagramas arquiteturais
 │   └── arquitetura.png
+├── docs/                                           # arquivos de documentação
+│   ├── multi_armed_bandit.md
+│   ├── config_neon_db.md
+│   └── config_mlflow.md
 ├── mlops/                                          # arquivos de configuração do MLFlow
 │   ├── artifacts/
 │   ├── __init__.py
@@ -257,8 +189,6 @@ financial-ml-decisioning
 
 ## 🛠️ 5. Instruções de execução
 
-> *Em construção*
-
 ### Requisitos:
 - Python 3.11 instalado
 
@@ -318,120 +248,11 @@ A documentação dos endpoints da API está disponível em https://financial-ml-
 
 ### 5.5 Configurar Neon Database
 
-1. Acessar o site https://neon.com/
-2. Criar uma conta
-3. Acessar `+ New project` (para este projeto foi usado o nome `financial-ml-decisioning`)
-4. Criar um object storage (para este projeto foi usado o nome `model-artifacts`)
-5. No repositório local, criar um .env (colocar no `.gitignore` para não subir para o repositório remoto)
-6. No terminal, executar a sequência de comandos (compatíveis com MacOS):
-
-    ``` bash
-    # instalar a CLI do Neon (macOS)
-    brew install neonctl
-
-    # verificar a versão instalada do Neon CLI
-    neonctl --version
-
-    # fazer autenticação da CLI na conta do Neon
-    neonctl auth
-
-    # vincular o diretório/repositório local a um projeto existente no Neon
-    neonctl link
-
-    # inicializar a configuração do Neon no projeto e criar os arquivos de configuração necessários
-    neon config init
-
-    # instalar o pacote de configuração do Neon utilizado pelo arquivo neon.ts
-    npm install @neon/config
-
-    # verificar o plano de configuração antes de aplicar alterações no Neon
-    neonctl config plan
-
-    # aplicar no projeto Neon as alterações definidas na configuração local
-    neonctl config deploy
-
-    # obter as variáveis de ambiente necessárias para utilizar o Object Storage
-    # e adicioná-las ao arquivo .env local
-    neonctl env pull --service object-storage
-
-    # listar somente os nomes das variáveis existentes no .env, sem exibir seus valores ou credenciais
-    grep -o '^[A-Za-z_][A-Za-z0-9_]*=' .env
-
-    # verificar se as variáveis do Object Storage foram carregadas no ambiente local
-    # sem imprimir os valores secretos
-    grep -E '^(AWS_ACCESS_KEY_ID|AWS_SECRET_ACCESS_KEY|AWS_ENDPOINT_URL_S3|AWS_REGION|NEON_S3_BUCKET)=' .env | cut -d= -f1
-
-    # nunca versionar o arquivo .env, pois ele contém credenciais e outros valores sensíveis
-    echo ".env" >> .gitignore
-    ```
-
-7. Para fazer upload de tabelas: exemplo no notebook [5_upload_indicators_neon.ipynb](notebooks/5_upload_indicators_neon.ipynb)
+As instruções de configuração do Neon Database estão disponíveis em [config_neon_db.md](docs/config_neon_db.md)
 
 ### 5.6 Configurar MLFlow
 
-1. Adicionar no .env a URI utilizada pela aplicação Python para se comunicar com o servidor MLflow local
-```
-MLFLOW_TRACKING_URI=http://127.0.0.1:5000
-```
-
-2. As credenciais do Neon Object Storage utilizadas pelo MLflow também devem estar disponíveis no .env; elas são obtidas anteriormente por meio do Neon CLI
-
-```
-AWS_ACCESS_KEY_ID=...
-AWS_SECRET_ACCESS_KEY=...
-AWS_ENDPOINT_URL_S3=...
-AWS_REGION=...
-NEON_S3_BUCKET=model-artifacts
-```
-
-3. Criar a pasta utilizada para armazenar localmente o backend de tracking do MLflow (executar no terminal, na pasta raiz)
-```
-mkdir -p mlops
-```
-
-4. Criar o script mlops/start_mlflow.sh responsável por carregar as variáveis de ambiente e inicializar o servidor local do MLflow (arquivo exemplo em [mlops/start_mlflow.sh](mlops/start_mlflow.sh))
-
-5. Conceder permissão de execução ao script; precisa ser executado apenas uma vez (executar no terminal, na pasta raiz)
-```
-chmod +x mlops/start_mlflow.sh
-```
-
-6. Iniciar o servidor local do MLflow; este comando deve permanecer em execução enquanto os experimentos estiverem sendo registrados (executar no terminal, na pasta raiz)
-```
-./mlops/start_mlflow.sh
-```
-
-7. O MLflow passa a utilizar dois tipos diferentes de armazenamento:
-    - mlops/mlflow.db (SQLite local): experimentos, runs, parâmetros, métricas e metadados
-    - Neon Object Storage: arquivos registrados como artifacts dos experimentos
-
-8. Acessar a interface local do MLflow após iniciar o servidor
-    - abrir no navegador: http://127.0.0.1:5000
-
-9. O arquivo mlops/tracking.py configura os notebooks para enviarem os registros ao servidor MLflow
-    - configurar_mlflow() utiliza MLFLOW_TRACKING_URI=http://127.0.0.1:5000
-
-10. Ao executar registrar_lints(), o experimento contextual_bandit_lints é criado ou reutilizado e são registrados os parâmetros, métricas e artifacts referentes ao Linear Thompson Sampling
-
-11. Ao executar registrar_reward_model(), o experimento reward_models_logistic_regression é criado ou reutilizado e é criada uma run para cada braço, por exemplo LogisticRegression_cellular e LogisticRegression_telephone
-
-12. Os parâmetros e métricas enviados por mlflow.log_params() e mlflow.log_metrics() ficam associados às respectivas runs no backend SQLite mlops/mlflow.db
-
-13. Os arquivos enviados por mlflow.log_artifact() são encaminhados pelo servidor MLflow para o diretório mlflow dentro do bucket model-artifacts no Neon Object Storage
-
-    - importante: o dashboard local depende do arquivo mlops/mlflow.db para conhecer experimentos, runs, parâmetros e métricas; o Object Storage sozinho não reconstrói todo o histórico de tracking do MLflow
-
-14. Adicionar o banco SQLite local do MLflow ao .gitignore; ele contém o histórico local das execuções e não deve ser tratado como código-fonte
-    - se o arquivo já tiver subido para o Git, executar `git rm --cached mlops/mlflow.db`
-
-15. Para utilizar novamente o MLflow em outro momento, basta iniciar o servidor
-```
-./mlops/start_mlflow.sh
-```
-
-16. Em outro terminal, ativar o ambiente virtual e executar normalmente o notebook de treinamento as chamadas registrar_lints() e registrar_reward_model() serão enviadas ao servidor MLflow em execução
-
-17. Ao finalizar o trabalho, interromper o servidor MLflow no terminal com Ctrl+C
+As instruções de configuração do MLFlow estão disponíveis em [config_mlflow.md](docs/config_mlflow.md)
 
 ## 🚀 6. Evolução do projeto
 
