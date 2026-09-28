@@ -230,3 +230,5 @@ node_modules/
 package-lock.json
 teste_neon.ipynb
 mlops/mlflow.db
+
+legacy/

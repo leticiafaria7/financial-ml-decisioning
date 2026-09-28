@@ -6,22 +6,25 @@
 > *📽️ Vídeo com demonstração técnica do projeto (em breve)*
 
 ## 🎯 1. Sobre o projeto
-O projeto tem como objetivo construir uma plataforma de experimentação adaptativa para ofertas, mensagens ou próximos passos em canais digitais para uma empresa de segmento financeiro usando [Multi-Armed Bandit](docs/multi_armed_bandit.md).
+
+O projeto tem como objetivo construir uma plataforma de experimentação adaptativa para ofertas por diferentes canais para uma empresa de segmento financeiro usando [Multi-Armed Bandit](docs/multi_armed_bandit.md).
 
 > ### 🎲 Fontes de dados
 
 Os dados utilizados neste projeto são provenientes do Kaggle: [Bank Marketing Data Set](https://www.kaggle.com/datasets/tunguz/bank-marketing-data-set)
 
-É uma tabela derivada do estudo publicado no artigo [A data-driven approach to predict the success of bank telemarketing](https://sci-hub.box/10.1016/j.dss.2014.03.001), de Moro *et al.*, 2014.
+É uma tabela derivada do estudo publicado no artigo A data-driven approach to predict the success of bank telemarketing de Moro *et al.*, 2014.
 
 - São dados de campanhas diretas de marketing (por telefone) de uma instituição bancária portuguesa.
-- A tabela tem 41.188 linhas e 21 colunas, sendo que a última informa se o cliente contratou o produto (term depoist), pode ser yes ou no.
+- A tabela tem 41.188 linhas e 21 colunas, sendo que a última informa se o cliente contratou o produto (term deposit), pode ser yes ou no.
 - Não há identificação dos clientes, apenas dados de perfil, de data, dados da campanha e dados econômicos do momento da ligação.
 - Os dados variam entre maio/2008 e novembro/2010 e estão ordenados por data (apenas mês e dia da semana)
 
-A análise exploratória está disponível no notebook [1_eda.ipynb](notebooks/eda.ipynb).
+A análise exploratória está disponível no notebook [1_eda.ipynb](notebooks/1_eda.ipynb).
 
-**Observações: Como a base utilizada não registra qual oferta foi apresentada, o reward usado no protótipo será a conversão do produto (term deposit).**
+**Limitações da tabela utilizada**:
+- Como a base utilizada não registra qual oferta foi apresentada, o reward usado no protótipo será a conversão do produto (term deposit)
+- Para cada cliente, temos apenas 1 forma de contato, então não é possível comparar diferentes canais para uma mesma pessoa
 
 > ### 🦾 Definições do bandit
 
@@ -48,7 +51,7 @@ A análise exploratória está disponível no notebook [1_eda.ipynb](notebooks/e
 
 **Reward** (coluna 'y')
 - **yes**: conversão
-- **no**: não 
+- **no**: não
 
 **Baseline**
 Oferecer o produto para todos que tem uma dessas características:
@@ -58,31 +61,31 @@ Oferecer o produto para todos que tem uma dessas características:
 - Estudante
 - Contratou na campanha anterior
 
-> ### 📈 Resultados do modelo
+## 📐 2. Arquitetura
 
-A política adaptativa (contextual bandit com Thompson Sampling linear) foi comparada a uma regra fixa que sempre oferece o braço de melhor conversão histórica (`cellular`), usando o método de replay não-enviesado (Unbiased Offline Evaluation of Contextual-bandit-based News Article Recommendation Algorithms, Li *et al.*, 2010): o histórico é percorrido em ordem cronológica e cada rodada só é contabilizada — para ambas as políticas — quando a ação escolhida coincide com a ação de fato registrada nos dados.
+A arquitetura do projeto como foi construído (on-premise) pode ser observada no diagrama abaixo
 
-![Conversão acumulada: regra fixa vs. bandit adaptativo](models/results/cumulative_reward_comparison.png)
+![Arquitetura](diagrams/arquitetura.png)
 
-A curva mostra o bandit adaptativo ultrapassando a regra fixa em alguns trechos do período, mas na maior parte do tempo sua conversão acumulada fica abaixo do baseline. Parte disso reflete uma mudança de regime entre os anos usados: 
-- em 2008 (treino) a conversão geral é de apenas 4,8%, com os canais quase empatados (50,5% cellular / 49,5% telephone); 
-- em 2009 (validação) a conversão sobe para 19,5%, já concentrada em cellular (91,8%); 
-- e em 2010 (teste) a conversão salta para 52,1%, com cellular em 81,1% dos contatos. 
+Se o projeto fosse colocado no ar usando os serviços da AWS, seriam utilizados os seguintes recursos:
 
-Como o bandit aprende a política com base no regime de baixa conversão de 2008–2009, ele carrega hipóteses que não se ajustam rapidamente ao salto de conversão observado em 2010. Como o método de replay só conta rodadas em que a recomendação do bandit coincide com a ação de fato registrada, os períodos em que `cellular` já dominava o histórico acabam favorecendo naturalmente a regra fixa nessa comparação. Isso indica não-estacionariedade na base (provável mudança de estratégia de campanha ao longo dos anos), e não necessariamente uma limitação do algoritmo em si.
+- Na etapa de fontes de dados e feature engineering, o dataset baixado do Kaggle poderia ser armazenado em um bucket do **Amazon S3,** que funcionaria como data lake bruto (camada raw) e, após o processamento, também guardaria as tabelas mensais de indicadores econômicos e a base já tratada (camada trusted).
 
-Os modelos auxiliares de recompensa (regressão logística por braço) também trazem sinais mistos frente ao baseline: 
-- o modelo do braço `cellular` supera bastante o baseline em recall (93,6% contra 62,4%), ao custo de uma precisão um pouco menor (58,8% contra 63,6%); ou seja, erra para menos clientes convertidos, mas com mais falsos positivos. 
-- já o modelo do braço `telephone` tem o padrão oposto: precisão levemente melhor que o baseline (65,2% contra 63,6%), mas recall bem mais baixo (27,3% contra 62,4%), sendo mais conservador na hora de recomendar esse canal. 
+- O processamento de criação da coluna de ano e da divisão temporal do train_test_split poderia ser feito em notebooks ou jobs do **Amazon SageMaker Processing** (ou, para um pipeline mais leve, em uma função **AWS Lambda** ou em um job do **AWS Glue**), lendo os dados diretamente do **S3** e regravando as tabelas processadas também no **S3**.
 
-Portanto, não é correto dizer que a regressão logística supera o baseline nas duas métricas simultaneamente; o ganho existe, mas é específico de cada braço, e é justamente essa especialização por contexto que o bandit tenta explorar.
+- Já a etapa de treino do modelo — definição de baseline, hiperparâmetros, treino do LinTS e da LogisticRegression — seria natural no **Amazon SageMaker Training**, que permite rodar os treinos em instâncias gerenciadas, versionar os experimentos e, combinado ao **SageMaker Model Registry**, substituir ou complementar o papel do MLflow no versionamento dos artefatos do modelo.
 
-Por fim, vale registrar uma limitação estrutural da base usada: para cada cliente, o histórico só contém o resultado do canal efetivamente utilizado na campanha original, sem informação sobre o que teria acontecido caso o outro canal tivesse sido escolhido. Isso é um cenário clássico de "logged bandit feedback": em vez de executar um experimento com exploração simultânea entre braços, o que temos são dados observacionais de uma única política.
+- Para a persistência dos dados, o Neon Database poderia ser substituído por um banco gerenciado na AWS, como o **Amazon RDS for PostgreSQL** (equivalente relacional direto) ou o **Amazon DynamoDB**, caso o padrão de acesso aos artefatos e predições fosse mais simples e orientado a chave-valor.
 
-Isso restringe a avaliação offline a métodos indiretos, como replay (que descarta boa parte do histórico para evitar viés) e estimativa via modelo de recompensa, ambos com limitações conhecidas. Um cenário mais adequado para demonstrar o ganho de uma abordagem adaptativa exigiria dados de um teste com alocação simultânea entre canais (ou o próprio bandit rodando em produção, escolhendo o canal para novos clientes), permitindo uma comparação causal mais direta entre a política fixa e a adaptativa.
+- Os artefatos do modelo (pesos, preprocessador, bandit) continuariam também versionados no **S3**, com o banco guardando metadados e resultados das predições.
 
-## ⚙️ 2. Etapas e funcionalidades
+- Na etapa de desenvolvimento e deploy da API, a aplicação Flask poderia ser empacotada em contêiner e implantada no **Amazon ECS** (Fargate) ou no **AWS App Runner**, com o tráfego exposto por um **Application Load Balancer** e, opcionalmente, o **Amazon API Gateway** na frente para gerenciar os endpoints /api/predict e /api/health.
 
+- O monitoramento, hoje feito pelo UptimeRobot, seria coberto pelo **Amazon CloudWatch** (métricas, logs e alarmes de saúde do serviço) combinado a checagens periódicas via **CloudWatch Synthetics** ou **Route 53 Health Checks**, mantendo a mesma função de verificar continuamente a disponibilidade do endpoint de saúde da API.
+
+## ⚙️ 3. Funcionalidades
+
+**Etapas principais**
 - Download, leitura e pré-processamento dos dados
 - Treino do modelo
     - Definição do baseline
@@ -90,10 +93,6 @@ Isso restringe a avaliação offline a métodos indiretos, como replay (que desc
     - Treino do modelo LinTS
     - Treino da LogisticRegression para calcular a probabilidade de conversão
     - Criação do Golden Set (exemplos diversos para demonstração da recomendação)
-- Uso da ferramenta de versionamento MLFlow localmente
-    - Instalação e configuração do MLFlow
-    - Registro das métricas 
-    - Registro a versão do modelo/política utilizada
 - Uso do banco de dados Neon Database
     - Criação de uma conta e de um projeto com object storage
     - Persistência dos artefatos do modelo e tabelas auxiliares de valores de indicadores econômicos para servir os dados através da API
@@ -103,32 +102,19 @@ Isso restringe a avaliação offline a métodos indiretos, como replay (que desc
     - Gerar a recomendação de braço/oferta
     - Retornar a oferta recomendada
     - Criação de interface para receber inputs do usuário e retornar outputs de recomendação
-    - Deploy no render e monitoramento do health com UptimeRobot
+    - Deploy no Render e monitoramento do health com UptimeRobot
 
-## 📐 3. Arquitetura
+**Uso do MLflow (localmente)**
 
-A arquitetura do projeto como foi construído (on-premise) pode ser observada no diagrama abaixo
+O versionamento e o rastreamento dos experimentos são feitos com **MLflow**, rodando localmente. Cada execução de treino registra:
+- os hiperparâmetros testados e escolhidos (alpha e l2_lambda do LinTS);
+- as métricas de avaliação (reward estimado, lift, match rate, e as métricas de classificação dos modelos de recompensa);
+- os artefatos gerados (bundle do modelo, preprocessador, metadados e as tabelas de comparação).
 
-![Arquitetura](diagrams/arquitetura.png)
-
-Se o projeto fosse colocado no ar usando os serviços da AWS, seriam utilizados os seguintes recursos:
-
-- Na etapa de fontes de dados e feature engineering, o dataset baixado do Kaggle poderia ser armazenado em um bucket do **Amazon S3,** que funcionaria como data lake bruto (camada raw) e, após o processamento, também guardaria as tabelas mensais de indicadores econômicos e a base já tratada (camada trusted). 
-
-- O processamento de criação da coluna de ano e da divisão temporal do train_test_split poderia ser feito em notebooks ou jobs do **Amazon SageMaker Processing** (ou, para um pipeline mais leve, em uma função **AWS Lambda** ou em um job do **AWS Glue**), lendo os dados diretamente do **S3** e regravando as tabelas processadas também no **S3**. 
-
-- Já a etapa de treino do modelo — definição de baseline, hiperparâmetros, treino do LinTS e da LogisticRegression — seria natural no **Amazon SageMaker Training**, que permite rodar os treinos em instâncias gerenciadas, versionar os experimentos e, combinado ao **SageMaker Model Registry**, substituir ou complementar o papel do MLflow no versionamento dos artefatos do modelo.
-
-- Para a persistência dos dados, o Neon Database poderia ser substituído por um banco gerenciado na AWS, como o **Amazon RDS for PostgreSQL** (equivalente relacional direto) ou o **Amazon DynamoDB**, caso o padrão de acesso aos artefatos e predições fosse mais simples e orientado a chave-valor.
-
-- Os artefatos do modelo (pesos, preprocessador, bandit) continuariam também versionados no **S3**, com o banco guardando metadados e resultados das predições. 
-
-- Na etapa de desenvolvimento e deploy da API, a aplicação Flask poderia ser empacotada em contêiner e implantada no **Amazon ECS** (Fargate) ou no **AWS App Runner**, com o tráfego exposto por um **Application Load Balancer** e, opcionalmente, o **Amazon API Gateway** na frente para gerenciar os endpoints /api/predict e /api/health. 
-
-- O monitoramento, hoje feito pelo UptimeRobot, seria coberto pelo **Amazon CloudWatch** (métricas, logs e alarmes de saúde do serviço) combinado a checagens periódicas via **CloudWatch Synthetics** ou **Route 53 Health Checks**, mantendo a mesma função de verificar continuamente a disponibilidade do endpoint de saúde da API.
+As instruções de instalação e configuração estão em [config_mlflow.md](docs/config_mlflow.md), e o passo a passo do registro dos experimentos pode ser visto no notebook [3_model_train.ipynb](notebooks/3_model_train.ipynb), na seção "Tracking MLFlow".
 
 
-## 📁 4. Estrutura do projeto
+## ⚙️ 4. Estrutura do projeto
 
 ```
 financial-ml-decisioning
@@ -212,12 +198,41 @@ financial-ml-decisioning
 └── requirements.txt                                # libs necessárias para rodar o projeto
 ```
 
-## 🛠️ 5. Instruções de execução
+## 📈 5. Resultados do modelo e Golden Set
+
+A política adaptativa (contextual bandit com Thompson Sampling linear) foi comparada a uma regra fixa que sempre oferece o braço de melhor conversão histórica (`cellular`), usando o método de replay não-enviesado (*Unbiased Offline Evaluation of Contextual-bandit-based News Article Recommendation Algorithms*, Li *et al.*, 2011): o histórico é percorrido em ordem cronológica e cada rodada só é contabilizada — para ambas as políticas — quando a ação escolhida coincide com a ação de fato registrada nos dados.
+
+![Conversão acumulada: regra fixa vs. bandit adaptativo](models/results/cumulative_reward_comparison.png)
+
+A curva mostra o bandit adaptativo ultrapassando a regra fixa em alguns trechos do período, mas na maior parte do tempo sua conversão acumulada fica abaixo do baseline. Parte disso reflete uma mudança de regime entre os anos usados:
+- em 2008 (treino) a conversão geral é de apenas 4,8%, com os canais quase empatados (50,5% cellular / 49,5% telephone);
+- em 2009 (validação) a conversão sobe para 19,5%, já concentrada em cellular (91,8%);
+- e em 2010 (teste) a conversão salta para 52,1%, com cellular em 81,1% dos contatos.
+
+Como o bandit aprende a política com base no regime de baixa conversão de 2008–2009, ele carrega hipóteses que não se ajustam rapidamente ao salto de conversão observado em 2010. Como o método de replay só conta rodadas em que a recomendação do bandit coincide com a ação de fato registrada, os períodos em que `cellular` já dominava o histórico acabam favorecendo naturalmente a regra fixa nessa comparação. Isso indica não-estacionariedade na base (provável mudança de estratégia de campanha ao longo dos anos), e não necessariamente uma limitação do algoritmo em si.
+
+Os modelos auxiliares de recompensa (regressão logística por braço) também trazem sinais mistos frente ao baseline:
+- o modelo do braço `cellular` supera bastante o baseline em recall (93,6% contra 62,4%), ao custo de uma precisão um pouco menor (58,8% contra 63,6%); ou seja, erra para menos clientes convertidos, mas com mais falsos positivos.
+- já o modelo do braço `telephone` tem o padrão oposto: precisão levemente melhor que o baseline (65,2% contra 63,6%), mas recall bem mais baixo (27,3% contra 62,4%), sendo mais conservador na hora de recomendar esse canal.
+
+Portanto, a regressão logística supera o baseline nas duas métricas simultaneamente; o ganho existe, mas é específico de cada braço, e é justamente essa especialização por contexto que o bandit tenta explorar.
+
+A base usada neste projeto tem uma limitação estrutural: para cada cliente, o histórico só contém o resultado do canal efetivamente utilizado na campanha original, sem informação sobre o que teria acontecido caso o outro canal tivesse sido escolhido. Isso é um cenário clássico de "logged bandit feedback": em vez de executar um experimento com exploração simultânea entre braços, o que temos são dados observacionais de uma única política.
+
+Isso restringe a avaliação offline a métodos indiretos, como replay (que descarta boa parte do histórico para evitar viés) e estimativa via modelo de recompensa, ambos com limitações conhecidas. Um cenário mais adequado para demonstrar o ganho de uma abordagem adaptativa exigiria dados de um teste com alocação simultânea entre canais (ou o próprio bandit rodando em produção, escolhendo o canal para novos clientes), permitindo uma comparação causal mais direta entre a política fixa e a adaptativa.
+
+**Golden Set**
+
+O Golden Set é um conjunto curado de exemplos de clientes com perfis variados, usado para demonstrar de forma didática o comportamento da recomendação (braço escolhido + probabilidade de conversão) em diferentes cenários, sem depender de uma amostra aleatória do teste. É especialmente útil para o pitch e para checagens rápidas de sanidade do modelo, já que evidencia recomendações contrastantes para perfis de clientes bem distintos.
+
+Está disponível no notebook [4_golden_set.ipynb](notebooks/4_golden_set.ipynb)
+
+## 🛠️ 6. Instruções de execução
 
 ### Requisitos:
 - Python 3.11 instalado
 
-### 5.1 Configurar ambiente virtual
+### 6.1 Configurar ambiente virtual
 
 - Criar ambiente virtual
 
@@ -259,27 +274,27 @@ python -m ipykernel install --user --name=venv-decisioning --display-name="Pytho
 python3 -m ipykernel install --user --name=venv-decisioning --display-name="Python (venv-decisioning)"
 ```
 
-### 5.2 Reproduzir feature engineering nos dados do Kaggle
+### 6.2 Reproduzir feature engineering nos dados do Kaggle
 
-Passos disponíveis no notebook [2_feature_eng.ipynb](notebooks/6_teste_api_prod.ipynb)
+Passos disponíveis no notebook [2_feature_eng.ipynb](notebooks/2_feature_eng.ipynb)
 
-### 5.3 Usar API localmente
+### 6.3 Usar API localmente
 
 Passos disponíveis no notebook [6_teste_api_prod.ipynb](notebooks/6_teste_api_prod.ipynb)
 
-### 5.4 Acessar Swagger
+### 6.4 Acessar Swagger
 
 A documentação dos endpoints da API está disponível em https://financial-ml-decisioning.onrender.com/docs/
 
-### 5.5 Configurar Neon Database
+### 6.5 Configurar Neon Database
 
 As instruções de configuração do Neon Database estão disponíveis em [config_neon_db.md](docs/config_neon_db.md)
 
-### 5.6 Configurar MLFlow
+### 6.6 Configurar MLFlow
 
 As instruções de configuração do MLFlow estão disponíveis em [config_mlflow.md](docs/config_mlflow.md)
 
-## 🚀 6. Evolução do projeto
+## 🚀 7. Evolução do projeto
 
 Limitações do projeto:
 - A base utilizada não registra qual oferta foi apresentada, então a avaliação de um bandit precisa explicitar como os "braços" serão definidos e como o reward será observado ou simulado
