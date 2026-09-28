@@ -2,8 +2,8 @@
 
 *Tech Challenge da Fase 5 do curso de [pós-graduação em Engenharia de Machine Learning FIAP](https://postech.fiap.com.br/curso/machine-learning-engineering/)*
 
-**Link para a aplicação / API:** https://financial-ml-decisioning.onrender.com/
-> *📽️ Vídeo com demonstração técnica do projeto (em breve)*
+- **Link para a aplicação / API:** https://financial-ml-decisioning.onrender.com/
+- **📽️ [Vídeo com demonstração técnica do projeto](https://youtu.be/_ZHS5QqEARs)** 
 
 ## 🎯 1. Sobre o projeto
 
